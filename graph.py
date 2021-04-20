@@ -1,4 +1,4 @@
-class OwnGraph:
+class Graph:
     """
     Implements a representation of a graph.
     """
