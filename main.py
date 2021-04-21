@@ -55,16 +55,20 @@ def parse_graphml_file(filename: str, digraph=True):
     return graph
 
 
-def draw_networkx_graph(graph: nx.Graph, labels, filename: str):
+def draw_networkx_graph(graph: nx.Graph, labels, filename: str, tree=False):
     """
-    Draws a given networkx graph with a cirular layout.
+    Draws a given networkx graph with a tree or circular layout.
+    :param tree: Bool; Drawn as tree
     :param graph: networkx Graph
     :param labels: Bool; Labels to be shown
     :param filename: str; for saving the image
     :return:
     """
     draw_graph = DrawGraph(graph)
-    draw_graph.draw_circular_layout(labels=labels, filename=filename)
+    if tree:
+        draw_graph.draw_tree(labels=labels, filename=filename)
+    else:
+        draw_graph.draw_circular_layout(labels=labels, filename=filename)
 
 
 def parse_newick_file(filename: str, digraph=True):
@@ -81,17 +85,34 @@ def parse_newick_file(filename: str, digraph=True):
     else:
         graph = nx.Graph
 
+    none_counter = 1
+
     while tree:
         node = tree[0]
         descendants = node.descendants
+        node, none_counter = rename_none_node(node, none_counter)
         graph.add_node(node.name)
         for to_node in descendants:
+            to_node, none_counter = rename_none_node(to_node, none_counter)
             graph.add_edge(node.name, to_node.name)
 
         tree.remove(node)
         tree += descendants
 
     return graph
+
+
+def rename_none_node(node, counter):
+    """
+    Renaming node with no name to differ from other not named node.
+    :param node: node to be checked
+    :param counter: int; counter for none nodes
+    :return: (Node, int)
+    """
+    if node.name is None:
+        node.name = str(node.name) + "_" + str(counter)
+        counter += 1
+    return node, counter
 
 
 def parse_and_draw_all_newick_files_in_dir(directory: str):
@@ -104,7 +125,7 @@ def parse_and_draw_all_newick_files_in_dir(directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(os.path.join(graph_directory, directory, filename))
         graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
-        draw_networkx_graph(graph, filename=os.path.join(graph_directory, directory, filename), labels=True)
+        draw_networkx_graph(graph, filename=os.path.join(graph_directory, directory, filename), labels=True, tree=True)
 
 
 def parse_and_draw_all_graphml_files_in_dir(directory: str):
