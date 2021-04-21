@@ -1,4 +1,5 @@
 import sys
+import os
 
 import networkx as nx
 
@@ -6,6 +7,8 @@ from draw_graph import DrawGraph
 from graph import Graph
 
 from newick import read as newick_read
+
+graph_directory = 'directed_graph_examples'
 
 
 def run():
@@ -36,19 +39,49 @@ def run():
 
 def parse_graphml_file(filename: str):
     g = nx.read_graphml(filename)
-
+    g = g.to_directed()
     drawing_graph = DrawGraph(g)
-    drawing_graph.draw_tree()
+    drawing_graph.draw_circular_layout(labels=False, filename=filename)
 
 
-def parse_newick_file(filename: str):
+def parse_newick_file(filename: str, digraph=True):
     tree = newick_read(filename)
 
-    print(tree)
+    if digraph:
+        graph = nx.DiGraph()
+    else:
+        graph = nx.Graph
+
+    while tree:
+        node = tree[0]
+        descendants = node.descendants
+        graph.add_node(node.name)
+        for to_node in descendants:
+            graph.add_edge(node.name, to_node.name)
+
+        tree.remove(node)
+        tree += descendants
+
+    drawing_graph = DrawGraph(graph)
+    drawing_graph.draw_circular_layout(labels=True, filename=filename)
+
+
+def parse_and_draw_all_newick_files_in_dir(directory: str):
+    print('Parsing Files In', directory, ':')
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(os.path.join(graph_directory, directory, filename))
+        parse_newick_file(os.path.join(graph_directory, directory, filename))
+
+
+def parse_and_draw_all_graphml_files_in_dir(directory: str):
+    print('Parsing Files In', directory, ':')
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(os.path.join(graph_directory, directory, filename))
+        parse_graphml_file(os.path.join(graph_directory, directory, filename))
 
 
 if __name__ == '__main__':
     # run()
-    parse_graphml_file('directed_graph_examples/graphml/Checkstyle-6.5.graphml')
-    # parse_newick_file('directed_graph_examples/Phylogeny-Binaer/7way.nh')
-    # parse_newick_file('directed_graph_examples/Phylogeny/phyliptree.nh')
+    parse_and_draw_all_graphml_files_in_dir('graphml')
+    # parse_and_draw_all_newick_files_in_dir('Phylogeny')
+    # parse_and_draw_all_newick_files_in_dir('Phylogeny-Binaer')
