@@ -12,6 +12,10 @@ graph_directory = 'directed_graph_examples'
 
 
 def run():
+    """
+    Parses a txt file with a adjacent list representation of a graph and draws the given graph with a random layout.
+    :return: None
+    """
     graph_filename = ""
 
     if len(sys.argv) > 1:
@@ -37,14 +41,39 @@ def run():
     new_draw_graph.draw_random_graph(digraph=digraph)
 
 
-def parse_graphml_file(filename: str):
-    g = nx.read_graphml(filename)
-    g = g.to_directed()
-    drawing_graph = DrawGraph(g)
-    drawing_graph.draw_circular_layout(labels=False, filename=filename)
+def parse_graphml_file(filename: str, digraph=True):
+    """
+    Parses a graphm file and return the networkx graph.
+    :param filename: str; full path of the to be parsed file
+    :param digraph: Bool; is the graph a digraph
+    :return: nx.Graph()
+    """
+    graph = nx.read_graphml(filename)
+    if digraph:
+        graph = graph.to_directed()
+
+    return graph
+
+
+def draw_networkx_graph(graph: nx.Graph, labels, filename: str):
+    """
+    Draws a given networkx graph with a cirular layout.
+    :param graph: networkx Graph
+    :param labels: Bool; Labels to be shown
+    :param filename: str; for saving the image
+    :return:
+    """
+    draw_graph = DrawGraph(graph)
+    draw_graph.draw_circular_layout(labels=labels, filename=filename)
 
 
 def parse_newick_file(filename: str, digraph=True):
+    """
+    Parses a newick file and returns the networkx graph.
+    :param filename: str; full path of the to be parsed file
+    :param digraph: Bool; is the graph a digraph
+    :return: nx.Graph()
+    """
     tree = newick_read(filename)
 
     if digraph:
@@ -62,26 +91,37 @@ def parse_newick_file(filename: str, digraph=True):
         tree.remove(node)
         tree += descendants
 
-    drawing_graph = DrawGraph(graph)
-    drawing_graph.draw_circular_layout(labels=True, filename=filename)
+    return graph
 
 
 def parse_and_draw_all_newick_files_in_dir(directory: str):
+    """
+    Parses and draws all newick files in the given directory.
+    :param directory: name of the directory (has to be in the directed_graph_examples directory)
+    :return: None
+    """
     print('Parsing Files In', directory, ':')
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(os.path.join(graph_directory, directory, filename))
-        parse_newick_file(os.path.join(graph_directory, directory, filename))
+        graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
+        draw_networkx_graph(graph, filename=os.path.join(graph_directory, directory, filename), labels=True)
 
 
 def parse_and_draw_all_graphml_files_in_dir(directory: str):
+    """
+    Parses and draws all graphml files in the given directory.
+    :param directory: name of the directory (has to be in the directed_graph_examples directory)
+    :return: None
+    """
     print('Parsing Files In', directory, ':')
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(os.path.join(graph_directory, directory, filename))
-        parse_graphml_file(os.path.join(graph_directory, directory, filename))
+        graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
+        draw_networkx_graph(graph, filename=os.path.join(graph_directory, directory, filename), labels=False)
 
 
 if __name__ == '__main__':
     # run()
     parse_and_draw_all_graphml_files_in_dir('graphml')
-    # parse_and_draw_all_newick_files_in_dir('Phylogeny')
-    # parse_and_draw_all_newick_files_in_dir('Phylogeny-Binaer')
+    parse_and_draw_all_newick_files_in_dir('Phylogeny')
+    parse_and_draw_all_newick_files_in_dir('Phylogeny-Binaer')
