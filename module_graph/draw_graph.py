@@ -49,15 +49,20 @@ class DrawGraph:
     This class is used to draw object of OwnGraph.
     """
 
-    def __init__(self, own_graph: ownGraph):
-        self.graph = nx.DiGraph()
-        self.edges = convert_edges(own_graph)
+    def __init__(self, graph, nx_graph=True):
+        """
+        Constructor of the DrawGraph class.
+        :param graph: Given graph
+        :param nx_graph: Is the given graph already a nx.Graph
+        """
+        if nx_graph:
+            self.graph = graph
+            self.edges = self.graph.edges()
+        else:
+            self.graph = nx.DiGraph()
+            self.edges = convert_edges(graph)
 
-        self.graph.add_edges_from(self.edges)
-
-    def __init__(self, graph):
-        self.graph = graph
-        self.edges = self.graph.edges()
+            self.graph.add_edges_from(self.edges)
 
     def get_edges(self):
         """
@@ -112,10 +117,9 @@ class DrawGraph:
 
     def draw_tree(self, labels=False, filename='tree'):
         """
-        Show a graphvis (tree) representation of the graph.
+        Show a graphviz (tree) representation of the graph.
         :param filename: filename for the figure
         :param labels: Should the labels for the nodes be drawn
-        :param digraph: Should the representation be a digraph; default True
         :return: None
         """
         pos = graphviz_layout(self.graph, prog="dot", args="")
