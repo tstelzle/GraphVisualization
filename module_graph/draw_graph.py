@@ -3,7 +3,7 @@ import networkx as nx
 import numpy
 import os
 
-from graph import Graph as ownGraph
+from .graph import Graph as ownGraph
 
 # This example needs Graphviz and either PyGraphviz or pydot
 # from networkx.drawing.nx_pydot import graphviz_layout

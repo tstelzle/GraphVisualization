@@ -3,8 +3,7 @@ import os
 
 import networkx as nx
 
-from draw_graph import DrawGraph
-from graph import Graph
+from module_graph import *
 
 from newick import read as newick_read
 
