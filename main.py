@@ -1,12 +1,11 @@
-import sys
 import os
+import sys
 
-import networkx as nx
+import newick
+from newick import read as newick_read
 
 from improved_walker_algorithm import *
 from module_graph import *
-
-from newick import read as newick_read
 
 graph_directory = 'directed_graph_examples'
 
@@ -95,22 +94,38 @@ def parse_newick_file(filename: str, digraph=True):
 
     none_counter = 1
 
+    # Adding root node
+    graph_newick.add_node(tree[0], child_position=0)
+
     while tree:
         node = tree[0]
-        descendants = node.descendants
         node, none_counter = rename_none_node(node, none_counter)
-        graph_newick.add_node(node.name)
-        for to_node in descendants:
-            to_node, none_counter = rename_none_node(to_node, none_counter)
-            graph_newick.add_edge(node.name, to_node.name)
-
-        tree.remove(node)
+        graph_newick, descendants, none_counter = add_newick_node_and_edge(graph_newick, node, none_counter)
         tree += descendants
+        tree.remove(node)
 
     return graph_newick
 
 
-def rename_none_node(node, counter):
+def add_newick_node_and_edge(graph: nx.Graph, current_node, none_counter: int):
+    """
+    Adding the descendants of the current node to the graph and adding the according edge.
+    Rename a node if the name is None.
+    :param graph: the network x graph to which node and edge should be added
+    :param current_node: the current node from the newick graph
+    :param none_counter: an integer representing the amount of None node
+    :return: (graph, descendants, none_counter)
+    """
+    descendants = current_node.descendants
+    for child_pos in range(len(descendants)):
+        descendants[child_pos], none_counter = rename_none_node(descendants[child_pos], none_counter)
+        graph.add_node(descendants[child_pos], child_position=child_pos)
+        graph.add_edge(current_node, descendants[child_pos])
+
+    return graph, descendants, none_counter
+
+
+def rename_none_node(node: newick.Node, counter):
     """
     Renaming node with no name to differ from other not named node.
     :param node: node to be checked
@@ -156,8 +171,11 @@ def parse_and_draw_all_graphml_files_in_dir(directory: str):
 
 if __name__ == '__main__':
     # parse_parameters()
-    # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'ce11.26way.commonNames.nh'))
-    graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', '7way.nh'))
-    # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'))
+    graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'hg38.20way.commonNames.nh'))
+    # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', '7way.nh'))
+    # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
     improved_walker_algorithm = ImprovedWalkerAlgorithm()
     improved_walker_algorithm.run(graph)
+
+    # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
+    # draw_networkx_graph(graph, labels=False, filename='output_2')

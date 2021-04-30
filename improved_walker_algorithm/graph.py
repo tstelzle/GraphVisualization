@@ -1,5 +1,9 @@
+import networkx as nx
+import matplotlib.pyplot as plt
 
 from .node import Node
+from module_graph import save_fig
+
 
 class Graph:
 
@@ -17,8 +21,7 @@ class Graph:
             for key, node_to in node.edges_to.items():
                 node.edges_to[key] = self.get_node_by_name(node_to)
 
-            for key, node_from in node.edges_from.items():
-                node.edges_from[key] = self.get_node_by_name(node_from)
+            node.parent = self.get_node_by_name(node.parent)
 
     def get_node_by_name(self, node_name):
         for node in self.nodes:
@@ -29,11 +32,42 @@ class Graph:
 
     def get_level(self, node: Node):
         if node == self.root_node:
-            return 0
-        level = 1
-        parent = node.edges_from[0]
-        while self.root_node is not parent:
-            level += 1
-            parent = parent.edges_from[0]
+            return 1
 
-        return level
+        return 1 + self.get_level(node.parent)
+
+    def count_roots(self):
+        root_list = []
+        root_counter = 0
+        for node in self.nodes:
+            if node.root is True:
+                root_counter += 1
+                root_list.append(node.name)
+        return root_counter, root_list
+
+    def print_root_counter(self):
+        print(self.count_roots()[0])
+
+    def print_roots(self):
+        print(self.count_roots()[1])
+
+    def print_node_count(self):
+        print('Nodes in Graph:', len(self.nodes))
+
+    def get_node_names_with_pos(self):
+        node_dict = {}
+        for node in self.nodes:
+            node_dict[node.name] = (node.x, node.y)
+
+        return node_dict
+
+    def draw_graph(self, filename: str):
+        nx_graph = nx.DiGraph()
+        for node_name, position in self.get_node_names_with_pos().items():
+            nx_graph.add_node(node_name, pos=position)
+
+        nx_graph.add_edges_from(self.edges)
+
+        nx.draw(nx_graph, with_labels=True)
+        save_fig(filename)
+        plt.show()
