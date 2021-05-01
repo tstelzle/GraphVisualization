@@ -11,7 +11,7 @@ class Graph:
         self.nodes = []
         self.edges = []
         self.root_node = None
-        self.distance = 5
+        self.distance = 0
 
     def print_root_node(self):
         print(self.root_node.name)
@@ -61,13 +61,42 @@ class Graph:
 
         return node_dict
 
+    def create_node_position_dict(self):
+        node_dict = {}
+        for node in self.nodes:
+            node_dict[node.name] = (node.x, node.y)
+
+        return node_dict
+
     def draw_graph(self, filename: str):
+        node_dict = self.create_node_position_dict()
         nx_graph = nx.DiGraph()
-        for node_name, position in self.get_node_names_with_pos().items():
-            nx_graph.add_node(node_name, pos=position)
+        nx_graph.add_nodes_from(node_dict.keys())
 
         nx_graph.add_edges_from(self.edges)
 
-        nx.draw(nx_graph, with_labels=True)
+        nx.draw(nx_graph, node_dict, with_labels=True)
         save_fig(filename)
         plt.show()
+
+    def print_breadth_first_search(self, node: Node):
+        queue = []
+        queue.append(node)
+        labeled_queue = [node]
+        level_dict = {}
+        while queue:
+            current_node = queue[0]
+            queue.remove(current_node)
+            current_level = self.get_level(current_node)
+            if current_level in level_dict:
+                level_dict[current_level].append(current_node.name)
+            else:
+                level_dict[current_level] = [current_node.name]
+            for pos, child in current_node.edges_to.items():
+                if child not in labeled_queue:
+                    labeled_queue.append(child)
+                    queue.append(child)
+
+        for i in range(1, len(level_dict)+1):
+            print(i, level_dict[i])
+

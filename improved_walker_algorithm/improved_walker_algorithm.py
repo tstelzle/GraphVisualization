@@ -23,10 +23,10 @@ def execute_shifts(node: Node):
     change = 0
     for descending_position in range(len(node.edges_to) - 1, -1, -1):
         node_w = node.edges_to[descending_position]
-        node_w.prelim = node_w.prelim + shift
-        node_w.mod = node_w.mod + shift
-        change = change + node_w.change
-        shift = shift + node_w.shift + change
+        node_w.prelim += shift
+        node_w.mod += shift
+        change += node_w.change
+        shift += node_w.shift + change
 
 
 def move_subtree(w_minus: Node, w_plus: Node, shift):
@@ -40,8 +40,7 @@ def move_subtree(w_minus: Node, w_plus: Node, shift):
 
 def ancestor(node_i_minus: Node, node: Node, default_ancestor: Node):
     siblings_names = [node.name for node in node.get_siblings().values()]
-    print(siblings_names)
-    if node_i_minus.ancestor.name in siblings_names:
+    if node_i_minus.ancestor.name in siblings_names and node_i_minus is not node:
         return node_i_minus.ancestor
     else:
         return default_ancestor
@@ -58,6 +57,8 @@ class ImprovedWalkerAlgorithm:
         self.__first_walk(self.graph.root_node)
         self.__second_walk(self.graph.root_node, - self.graph.root_node.prelim)
 
+        self.graph.print_breadth_first_search(self.graph.root_node)
+
         self.__print_info()
         self.graph.print_root_counter()
         self.graph.print_node_count()
@@ -65,6 +66,7 @@ class ImprovedWalkerAlgorithm:
 
     def __tree_layout(self, nx_graph: nx.Graph):
         graph_nodes = []
+        new_edges = []
         for node in nx_graph.nodes.items():
             new_node = Node(name=node[0].name)
             new_node.number = node[1]['child_position']
@@ -75,6 +77,7 @@ class ImprovedWalkerAlgorithm:
                     edge_from, edge_to, weight = edge
                 except ValueError:
                     edge_from, edge_to = edge
+                new_edges.append((edge_from.name, edge_to.name))
                 if edge_from.name is node[0].name:
                     child_pos = [node[1]['child_position'] for node in nx_graph.nodes.items() if node[0] == edge_to][0]
                     edges_to[child_pos] = edge_to.name
@@ -91,7 +94,7 @@ class ImprovedWalkerAlgorithm:
             graph_nodes.append(new_node)
 
         self.graph.nodes = graph_nodes
-        self.graph.edges = nx_graph.edges
+        self.graph.edges = new_edges
 
         self.graph.replace_node_names_with_node_objects()
 
@@ -151,10 +154,9 @@ class ImprovedWalkerAlgorithm:
             if next_right(node_i_minus) and not next_right(node_o_plus):
                 node_o_plus.thread = next_right(node_i_minus)
                 node_o_plus.mod += s_i_minus - s_o_plus
-            else:
-                if next_left(node_i_plus) and not next_left(node_o_minus):
-                    node_o_minus.thread = next_left(node_i_plus)
-                    node_o_minus.mod += s_i_plus + s_o_minus
+            if next_left(node_i_plus) and not next_left(node_o_minus):
+                node_o_minus.thread = next_left(node_i_plus)
+                node_o_minus.mod += s_i_plus + s_o_minus
                 default_ancestor = node_v
 
             return default_ancestor
