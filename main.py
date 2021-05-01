@@ -173,9 +173,10 @@ if __name__ == '__main__':
     # parse_parameters()
     graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'hg38.20way.commonNames.nh'))
     # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', '7way.nh'))
+    # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'ce11.26way.commonNames.nh'))
     # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
     improved_walker_algorithm = ImprovedWalkerAlgorithm()
-    improved_walker_algorithm.run(graph)
+    improved_walker_algorithm.run(graph, 'test')
 
     # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
     # draw_networkx_graph(graph, labels=False, filename='output_2')

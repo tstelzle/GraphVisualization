@@ -21,11 +21,20 @@ class Node:
 
         return {}
 
+    def get_left_most_sibling(self):
+        if self.parent:
+            left_most_node = self.parent.edges_to[0]
+            if left_most_node is not self:
+                return left_most_node
+
+        print(self.name)
+        return None
+
     def get_left_sibling(self):
         siblings = self.get_siblings()
         for position, node_name in siblings.items():
             if position == 0:
-                if node_name is self.name:
+                if node_name.name is self.name:
                     return None
                 else:
                     return siblings[position]

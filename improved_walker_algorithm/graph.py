@@ -11,7 +11,7 @@ class Graph:
         self.nodes = []
         self.edges = []
         self.root_node = None
-        self.distance = 0
+        self.distance = 5
 
     def print_root_node(self):
         print(self.root_node.name)

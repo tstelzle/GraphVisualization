@@ -52,17 +52,17 @@ class ImprovedWalkerAlgorithm:
         self.graph = Graph()
         self.default_ancestor = None
 
-    def run(self, nx_graph: nx.Graph):
+    def run(self, nx_graph: nx.Graph, filename: str):
         self.__tree_layout(nx_graph)
         self.__first_walk(self.graph.root_node)
-        self.__second_walk(self.graph.root_node, - self.graph.root_node.prelim)
+        self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
 
         self.graph.print_breadth_first_search(self.graph.root_node)
 
         self.__print_info()
         self.graph.print_root_counter()
         self.graph.print_node_count()
-        self.graph.draw_graph('test')
+        self.graph.draw_graph(filename)
 
     def __tree_layout(self, nx_graph: nx.Graph):
         graph_nodes = []
@@ -100,7 +100,11 @@ class ImprovedWalkerAlgorithm:
 
     def __first_walk(self, node_v: Node):
         if not node_v.edges_to:
-            self.prelim = 0
+            left_sibling = node_v.get_left_sibling()
+            if left_sibling:
+                node_v.prelim = left_sibling.prelim + self.graph.distance
+            else:
+                self.prelim = 0
         else:
             default_ancestor = node_v.edges_to[0]
             for i in range(len(node_v.edges_to)):
@@ -129,7 +133,7 @@ class ImprovedWalkerAlgorithm:
             node_i_plus = node_v
             node_o_plus = node_v
             node_i_minus = left_sibling
-            node_o_minus = node_i_plus.get_siblings()[0]
+            node_o_minus = node_i_plus.get_left_most_sibling()
             s_i_plus = node_i_plus.mod
             s_o_plus = node_o_plus.mod
             s_i_minus = node_i_minus.mod
@@ -159,7 +163,7 @@ class ImprovedWalkerAlgorithm:
                 node_o_minus.mod += s_i_plus + s_o_minus
                 default_ancestor = node_v
 
-            return default_ancestor
+        return default_ancestor
 
     def __print_info(self):
         for node in self.graph.nodes:
