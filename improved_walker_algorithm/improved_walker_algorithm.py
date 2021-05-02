@@ -57,11 +57,11 @@ class ImprovedWalkerAlgorithm:
         self.__first_walk(self.graph.root_node)
         self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
 
-        self.graph.print_breadth_first_search(self.graph.root_node)
+        # self.graph.print_breadth_first_search(self.graph.root_node)
 
         self.__print_info()
-        self.graph.print_root_counter()
-        self.graph.print_node_count()
+        # self.graph.print_root_counter()
+        # self.graph.print_node_count()
         self.graph.draw_graph(filename)
 
     def __tree_layout(self, nx_graph: nx.Graph):
@@ -117,7 +117,7 @@ class ImprovedWalkerAlgorithm:
             left_sibling = node_v.get_left_sibling()
             if left_sibling:
                 node_v.prelim = left_sibling.prelim + self.graph.distance
-                node_v.mod = node_v.mod - midpoint
+                node_v.mod = node_v.prelim - midpoint
             else:
                 node_v.prelim = midpoint
 

@@ -80,8 +80,7 @@ class Graph:
         plt.show()
 
     def print_breadth_first_search(self, node: Node):
-        queue = []
-        queue.append(node)
+        queue = [node]
         labeled_queue = [node]
         level_dict = {}
         while queue:
@@ -99,4 +98,3 @@ class Graph:
 
         for i in range(1, len(level_dict)+1):
             print(i, level_dict[i])
-
