@@ -10,7 +10,7 @@ from module_graph import *
 graph_directory = 'directed_graph_examples'
 
 
-class color:
+class Color:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
     DARKCYAN = '\033[36m'
@@ -67,6 +67,23 @@ def run(graph_filename: str):
     new_draw_graph.draw_random_graph(digraph=digraph)
 
 
+def parse_graphml_file_newick_format(filename: str, digraph=True):
+    """
+    Parses a graphml file and return the networkx graph. Forces each node to be in the newick.Node format.
+    :param filename: str; full path of the to be parsed file
+    :param digraph: Bool; is the graph a digraph
+    :return: nx.Graph()
+    """
+    graphml_graph = nx.read_graphml(filename, node_type=newick.Node)
+    if digraph:
+        graphml_graph = graphml_graph.to_directed()
+
+    for current_node in graphml_graph.nodes:
+        graphml_graph.add_node(current_node, name=node, child_position=0)
+
+    return graphml_graph
+
+
 def parse_graphml_file(filename: str, digraph=True):
     """
     Parses a graphml file and return the networkx graph.
@@ -117,20 +134,20 @@ def parse_newick_file(filename: str, digraph=True):
     graph_newick.add_node(tree[0], child_position=0)
 
     while tree:
-        node = tree[0]
-        node, none_counter = rename_none_node(node, none_counter)
-        graph_newick, descendants, none_counter = add_newick_node_and_edge(graph_newick, node, none_counter)
+        tree_node = tree[0]
+        tree_node, none_counter = rename_none_node(tree_node, none_counter)
+        graph_newick, descendants, none_counter = add_newick_node_and_edge(graph_newick, tree_node, none_counter)
         tree += descendants
         tree.remove(node)
 
     return graph_newick
 
 
-def add_newick_node_and_edge(graph: nx.Graph, current_node, none_counter: int):
+def add_newick_node_and_edge(nx_graph: nx.Graph, current_node, none_counter: int):
     """
     Adding the descendants of the current node to the graph and adding the according edge.
     Rename a node if the name is None.
-    :param graph: the network x graph to which node and edge should be added
+    :param nx_graph: the network x graph to which node and edge should be added
     :param current_node: the current node from the newick graph
     :param none_counter: an integer representing the amount of None node
     :return: (graph, descendants, none_counter)
@@ -138,23 +155,23 @@ def add_newick_node_and_edge(graph: nx.Graph, current_node, none_counter: int):
     descendants = current_node.descendants
     for child_pos in range(len(descendants)):
         descendants[child_pos], none_counter = rename_none_node(descendants[child_pos], none_counter)
-        graph.add_node(descendants[child_pos], child_position=child_pos)
-        graph.add_edge(current_node, descendants[child_pos])
+        nx_graph.add_node(descendants[child_pos], child_position=child_pos)
+        nx_graph.add_edge(current_node, descendants[child_pos])
 
-    return graph, descendants, none_counter
+    return nx_graph, descendants, none_counter
 
 
-def rename_none_node(node: newick.Node, counter):
+def rename_none_node(node_to_rename: newick.Node, counter):
     """
     Renaming node with no name to differ from other not named node.
-    :param node: node to be checked
+    :param node_to_rename: node to be checked
     :param counter: int; counter for none nodes
     :return: (Node, int)
     """
-    if node.name is None:
-        node.name = str(node.name) + "_" + str(counter)
+    if node_to_rename.name is None:
+        node_to_rename.name = str(node_to_rename.name) + "_" + str(counter)
         counter += 1
-    return node, counter
+    return node_to_rename, counter
 
 
 def parse_and_draw_all_newick_files_in_dir(directory: str):
@@ -189,10 +206,15 @@ def parse_and_draw_all_graphml_files_in_dir(directory: str):
 
 
 def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: str):
-    print(color.UNDERLINE + 'Parsing Files In', directory + ':', color.END)
-    improved_walker_algorithm = ImprovedWalkerAlgorithm()
+    """
+    Parses and draws all newick files from the examples with the implemented Improved Walker Algorithm.
+    :param directory: str, directory for the newick files
+    :return: None
+    """
+    print(Color.UNDERLINE + 'Parsing Files In', directory + ':', Color.END)
+    improved_walker_algorithm_object = ImprovedWalkerAlgorithm()
     for filename in os.listdir(os.path.join(graph_directory, directory)):
-        print(color.BOLD + os.path.join(graph_directory, directory, filename) + color.END)
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         current_newick_graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
         scale_x = 20
         scale_y = 20
@@ -205,18 +227,26 @@ def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: st
         elif 'hg38.100way' in filename or 'phpliptree' in filename:
             scale_x = 40
             scale_y = 20
-        improved_walker_algorithm.run(current_newick_graph, filename=os.path.join(graph_directory, directory, filename),
-                                      scale_x=scale_x, scale_y=scale_y)
+        improved_walker_algorithm_object.run(current_newick_graph,
+                                             filename=os.path.join(graph_directory, directory, filename),
+                                             scale_x=scale_x,
+                                             scale_y=scale_y)
 
 
 def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: str):
-    print(color.UNDERLINE + 'Parsing Files In', directory, ':' + color.END)
-    improved_walker_algorithm = ImprovedWalkerAlgorithm()
+    """
+    Parses and draws all graphml files from the examples with the implemented Improved Walker Algorithm.
+    (The current examples are not suitable for the Improved Walker Algorithm.
+    :param directory: str, directory for the graphml files
+    :return: None
+    """
+    print(Color.UNDERLINE + 'Parsing Files In', directory, ':' + Color.END)
+    improved_walker_algorithm_object = ImprovedWalkerAlgorithm()
     for filename in os.listdir(os.path.join(graph_directory, directory)):
-        print(color.BOLD + os.path.join(graph_directory, directory, filename) + color.END)
-        current_graphml_graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
-        improved_walker_algorithm.run(current_graphml_graph,
-                                      filename=os.path.join(graph_directory, directory, filename))
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        current_graphml_graph = parse_graphml_file_newick_format(os.path.join(graph_directory, directory, filename))
+        improved_walker_algorithm_object.run(current_graphml_graph,
+                                             filename=os.path.join(graph_directory, directory, filename))
 
 
 if __name__ == '__main__':

@@ -47,18 +47,29 @@ def ancestor(node_i_minus: Node, node: Node, default_ancestor: Node):
 
 
 class ImprovedWalkerAlgorithm:
+    """
+    Class Improved Walker Algorithm
+    """
 
     def __init__(self):
         self.graph = Graph()
         self.default_ancestor = None
 
     def run(self, nx_graph: nx.Graph, filename: str, scale_x=10, scale_y=10):
+        """
+        Starts the Improved Walker Algorithm
+        :param nx_graph: Networkx Graph, for which the algorithm should be run
+        :param filename: str, Filename for the to be saved image
+        :param scale_x: int, x scale for the image
+        :param scale_y: int, y scale for the image
+        :return:
+        """
         self.__tree_layout(nx_graph)
         self.__first_walk(self.graph.root_node)
         self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
         self.graph.draw_graph(filename, scale_x=scale_x, scale_y=scale_y)
 
-        self.__print_info()
+        self.__print_nodes_coordinates()
 
     def __tree_layout(self, nx_graph: nx.Graph):
         graph_nodes = []
@@ -162,11 +173,23 @@ class ImprovedWalkerAlgorithm:
         return default_ancestor
 
     def __print_infos(self):
+        """
+        This method is for debugging.
+        Prints the current nodes by depth in graph.
+        Prints all nodes with coordinates.
+        Prints the amount of root nodes (without edges from other nodes).
+        Prints the amount of nodes in the graph
+        :return: None
+        """
         self.graph.print_breadth_first_search(self.graph.root_node)
-        self.__print_info()
+        self.__print_nodes_coordinates()
         self.graph.print_root_counter()
         self.graph.print_node_count()
 
-    def __print_info(self):
+    def __print_nodes_coordinates(self):
+        """
+        Prints all nodes with their coordinates.
+        :return: None
+        """
         for node in self.graph.nodes:
             print(node.name, node.x, node.y)
