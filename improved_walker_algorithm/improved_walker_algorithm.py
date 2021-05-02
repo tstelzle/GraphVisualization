@@ -52,17 +52,13 @@ class ImprovedWalkerAlgorithm:
         self.graph = Graph()
         self.default_ancestor = None
 
-    def run(self, nx_graph: nx.Graph, filename: str):
+    def run(self, nx_graph: nx.Graph, filename: str, scale_x=10, scale_y=10):
         self.__tree_layout(nx_graph)
         self.__first_walk(self.graph.root_node)
         self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
-
-        # self.graph.print_breadth_first_search(self.graph.root_node)
+        self.graph.draw_graph(filename, scale_x=scale_x, scale_y=scale_y)
 
         self.__print_info()
-        # self.graph.print_root_counter()
-        # self.graph.print_node_count()
-        self.graph.draw_graph(filename)
 
     def __tree_layout(self, nx_graph: nx.Graph):
         graph_nodes = []
@@ -164,6 +160,12 @@ class ImprovedWalkerAlgorithm:
                 default_ancestor = node_v
 
         return default_ancestor
+
+    def __print_infos(self):
+        self.graph.print_breadth_first_search(self.graph.root_node)
+        self.__print_info()
+        self.graph.print_root_counter()
+        self.graph.print_node_count()
 
     def __print_info(self):
         for node in self.graph.nodes:

@@ -15,6 +15,12 @@ class Node:
         self.x = -1
         self.y = 0
 
+    def get_x_or_y(self, position):
+        if position == 'x':
+            return self.x
+        elif position == 'y':
+            return self.y
+
     def get_siblings(self):
         if self.parent:
             return self.parent.edges_to

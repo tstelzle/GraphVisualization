@@ -10,6 +10,19 @@ from module_graph import *
 graph_directory = 'directed_graph_examples'
 
 
+class color:
+    PURPLE = '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
+
 def parse_parameters():
     if len(sys.argv) > 1:
         for argument in sys.argv:
@@ -26,8 +39,14 @@ def parse_parameters():
             if argument == "-n":
                 parse_and_draw_all_newick_files_in_dir('Phylogeny')
                 parse_and_draw_all_newick_files_in_dir('Phylogeny-Binaer')
+            if argument == "-wn":
+                parse_and_draw_all_newick_files_with_improved_walker_algorithm('Phylogeny')
+                parse_and_draw_all_newick_files_with_improved_walker_algorithm('Phylogeny-Binaer')
+            if argument == '-wg':
+                parse_and_draw_all_graphml_files_with_improved_walter_algorithm('graphml')
+
     else:
-        print('Missing graph file!')
+        print('No Parameter specified - Don\'t know what to do!')
         exit(1)
 
 
@@ -169,14 +188,36 @@ def parse_and_draw_all_graphml_files_in_dir(directory: str):
                             labels=False)
 
 
-if __name__ == '__main__':
-    # parse_parameters()
-    graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'hg38.20way.commonNames.nh'))
-    # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', '7way.nh'))
-    # graph = parse_newick_file(os.path.join(graph_directory, 'Phylogeny-Binaer', 'ce11.26way.commonNames.nh'))
-    # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
+def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: str):
+    print(color.UNDERLINE + 'Parsing Files In', directory + ':', color.END)
     improved_walker_algorithm = ImprovedWalkerAlgorithm()
-    improved_walker_algorithm.run(graph, 'test')
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(color.BOLD + os.path.join(graph_directory, directory, filename) + color.END)
+        current_newick_graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
+        scale_x = 20
+        scale_y = 20
+        if 'eboVir' in filename:
+            scale_x = 80
+            scale_y = 40
+        elif '7way' in filename:
+            scale_x = 5
+            scale_y = 10
+        elif 'hg38.100way' in filename or 'phpliptree' in filename:
+            scale_x = 40
+            scale_y = 20
+        improved_walker_algorithm.run(current_newick_graph, filename=os.path.join(graph_directory, directory, filename),
+                                      scale_x=scale_x, scale_y=scale_y)
 
-    # graph = parse_graphml_file(os.path.join(graph_directory, 'graphml', 'Checkstyle-6.5.graphml'), digraph=False)
-    # draw_networkx_graph(graph, labels=False, filename='output_2')
+
+def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: str):
+    print(color.UNDERLINE + 'Parsing Files In', directory, ':' + color.END)
+    improved_walker_algorithm = ImprovedWalkerAlgorithm()
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(color.BOLD + os.path.join(graph_directory, directory, filename) + color.END)
+        current_graphml_graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
+        improved_walker_algorithm.run(current_graphml_graph,
+                                      filename=os.path.join(graph_directory, directory, filename))
+
+
+if __name__ == '__main__':
+    parse_parameters()

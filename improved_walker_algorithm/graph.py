@@ -68,14 +68,17 @@ class Graph:
 
         return node_dict
 
-    def draw_graph(self, filename: str):
+    def draw_graph(self, filename: str, scale_x=10, scale_y=10):
         node_dict = self.create_node_position_dict()
         nx_graph = nx.DiGraph()
         nx_graph.add_nodes_from(node_dict.keys())
 
         nx_graph.add_edges_from(self.edges)
 
+        plt.figure(1, figsize=(scale_x, scale_y))
         nx.draw(nx_graph, node_dict, with_labels=True)
+        plt.gca().invert_yaxis()
+        plt.gca().invert_xaxis()
         save_fig(filename)
         plt.show()
 
