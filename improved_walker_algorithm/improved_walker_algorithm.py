@@ -4,48 +4,6 @@ from .graph import Graph
 from .node import Node
 
 
-def next_left(node: Node):
-    if node.edges_to:
-        return node.edges_to[0]
-    else:
-        return node.thread
-
-
-def next_right(node: Node):
-    if node.edges_to:
-        return node.edges_to[len(node.edges_to) - 1]
-    else:
-        return node.thread
-
-
-def execute_shifts(node: Node):
-    shift = 0
-    change = 0
-    for descending_position in range(len(node.edges_to) - 1, -1, -1):
-        node_w = node.edges_to[descending_position]
-        node_w.prelim += shift
-        node_w.mod += shift
-        change += node_w.change
-        shift += node_w.shift + change
-
-
-def move_subtree(w_minus: Node, w_plus: Node, shift):
-    subtrees = w_plus.number - w_minus.number
-    w_plus.change -= shift / subtrees
-    w_plus.shift += shift
-    w_minus.change += shift / subtrees
-    w_plus.prelim += shift
-    w_plus.mod += shift
-
-
-def ancestor(node_i_minus: Node, node: Node, default_ancestor: Node):
-    siblings_names = [node.name for node in node.get_siblings().values()]
-    if node_i_minus.ancestor.name in siblings_names and node_i_minus is not node:
-        return node_i_minus.ancestor
-    else:
-        return default_ancestor
-
-
 class ImprovedWalkerAlgorithm:
     """
     Class Improved Walker Algorithm
@@ -118,7 +76,7 @@ class ImprovedWalkerAlgorithm:
                 node_w = node_v.edges_to[i]
                 self.__first_walk(node_w)
                 default_ancestor = self.__apportion(node_w, default_ancestor)
-            execute_shifts(node_v)
+            self.__execute_shifts(node_v)
             midpoint = (node_v.edges_to[0].prelim + node_v.edges_to[len(node_v.edges_to) - 1].prelim) / 2
 
             left_sibling = node_v.get_left_sibling()
@@ -146,27 +104,27 @@ class ImprovedWalkerAlgorithm:
             s_i_minus = node_i_minus.mod
             s_o_minus = node_o_minus.mod
 
-            while next_right(node_i_minus) and next_left(node_i_plus):
-                node_i_minus = next_right(node_i_minus)
-                node_i_plus = next_left(node_i_plus)
-                node_o_minus = next_left(node_o_minus)
-                node_o_plus = next_right(node_o_plus)
-                node_o_plus.ancestor = node_v
+            while self.__next_right(node_i_minus) and self.__next_left(node_i_plus):
+                node_i_minus = self.__next_right(node_i_minus)
+                node_i_plus = self.__next_left(node_i_plus)
+                node_o_minus = self.__next_left(node_o_minus)
+                node_o_plus = self.__next_right(node_o_plus)
+                node_o_plus.__ancestor = node_v
                 shift = (node_i_minus.prelim + s_i_minus) - (node_i_plus.prelim + s_i_plus) + self.graph.distance
                 if shift > 0:
-                    ancestor_node = ancestor(node_i_minus, node_v, default_ancestor)
-                    move_subtree(ancestor_node, node_v, shift)
+                    ancestor_node = self.__ancestor(node_i_minus, node_v, default_ancestor)
+                    self.__move_subtree(ancestor_node, node_v, shift)
                     s_i_plus += shift
                     s_o_plus += shift
                 s_i_minus += node_i_minus.mod
                 s_i_plus += node_i_plus.mod
                 s_o_minus += node_o_minus.mod
                 s_o_plus += node_o_plus.mod
-            if next_right(node_i_minus) and not next_right(node_o_plus):
-                node_o_plus.thread = next_right(node_i_minus)
+            if self.__next_right(node_i_minus) and not self.__next_right(node_o_plus):
+                node_o_plus.thread = self.__next_right(node_i_minus)
                 node_o_plus.mod += s_i_minus - s_o_plus
-            if next_left(node_i_plus) and not next_left(node_o_minus):
-                node_o_minus.thread = next_left(node_i_plus)
+            if self.__next_left(node_i_plus) and not self.__next_left(node_o_minus):
+                node_o_minus.thread = self.__next_left(node_i_plus)
                 node_o_minus.mod += s_i_plus + s_o_minus
                 default_ancestor = node_v
 
@@ -193,3 +151,45 @@ class ImprovedWalkerAlgorithm:
         """
         for node in self.graph.nodes:
             print(node.name, node.x, node.y)
+
+    @staticmethod
+    def __next_left(node: Node):
+        if node.edges_to:
+            return node.edges_to[0]
+        else:
+            return node.thread
+
+    @staticmethod
+    def __next_right(node: Node):
+        if node.edges_to:
+            return node.edges_to[len(node.edges_to) - 1]
+        else:
+            return node.thread
+
+    @staticmethod
+    def __execute_shifts(node: Node):
+        shift = 0
+        change = 0
+        for descending_position in range(len(node.edges_to) - 1, -1, -1):
+            node_w = node.edges_to[descending_position]
+            node_w.prelim += shift
+            node_w.mod += shift
+            change += node_w.change
+            shift += node_w.shift + change
+
+    @staticmethod
+    def __move_subtree(w_minus: Node, w_plus: Node, shift):
+        subtrees = w_plus.number - w_minus.number
+        w_plus.change -= shift / subtrees
+        w_plus.shift += shift
+        w_minus.change += shift / subtrees
+        w_plus.prelim += shift
+        w_plus.mod += shift
+
+    @staticmethod
+    def __ancestor(node_i_minus: Node, node: Node, default_ancestor: Node):
+        siblings_names = [node.name for node in node.get_siblings().values()]
+        if node_i_minus.ancestor.name in siblings_names and node_i_minus is not node:
+            return node_i_minus.ancestor
+        else:
+            return default_ancestor

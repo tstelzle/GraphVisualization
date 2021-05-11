@@ -138,7 +138,7 @@ def parse_newick_file(filename: str, digraph=True):
         tree_node, none_counter = rename_none_node(tree_node, none_counter)
         graph_newick, descendants, none_counter = add_newick_node_and_edge(graph_newick, tree_node, none_counter)
         tree += descendants
-        tree.remove(node)
+        tree.remove(tree_node)
 
     return graph_newick
 
@@ -224,9 +224,12 @@ def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: st
         elif '7way' in filename:
             scale_x = 5
             scale_y = 10
-        elif 'hg38.100way' in filename or 'phpliptree' in filename:
+        elif 'hg38.100way' in filename or 'phyliptree' in filename:
+            scale_x = 60
+        elif 'hg38.100way.commonNames' in filename or 'hhg38.100way.scientificNames' in filename:
+            scale_x = 100
+        elif 'ce11.26way.commonNames' in filename or 'ce11.26way.scientificNames' in filename:
             scale_x = 40
-            scale_y = 20
         improved_walker_algorithm_object.run(current_newick_graph,
                                              filename=os.path.join(graph_directory, directory, filename),
                                              scale_x=scale_x,

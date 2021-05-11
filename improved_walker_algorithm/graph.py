@@ -41,7 +41,7 @@ class Graph:
         :return: ?Node
         """
         for node in self.nodes:
-            if node_name is node.name:
+            if node_name == node.name:
                 return node
 
         return None
@@ -121,7 +121,6 @@ class Graph:
         plt.figure(1, figsize=(scale_x, scale_y))
         nx.draw(nx_graph, node_dict, with_labels=True)
         plt.gca().invert_yaxis()
-        plt.gca().invert_xaxis()
         save_fig(filename)
         plt.show()
 

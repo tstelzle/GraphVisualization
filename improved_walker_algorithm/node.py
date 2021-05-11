@@ -48,17 +48,27 @@ class Node:
 
         return None
 
+    def get_position(self):
+
+        if self.parent:
+            for position, node in self.parent.edges_to.items():
+                if node is self:
+                    return position
+        return -1
+
     def get_left_sibling(self):
         """
         Returns the left sibling of the node. If the node has no left sibling None is returned
         :return: ?Node
         """
+        node_position = self.get_position()
+
+        if node_position == 0 or node_position == -1:
+            return None
+
         siblings = self.get_siblings()
         for position, node_name in siblings.items():
-            if position == 0:
-                if node_name.name is self.name:
-                    return None
-                else:
+            if position == node_position - 1:
                     return siblings[position]
 
         return None
