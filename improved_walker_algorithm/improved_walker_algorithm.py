@@ -1,7 +1,7 @@
 import networkx as nx
 
-from .graph import Graph
-from .node import Node
+from module_graph import Graph
+from module_graph import Node
 
 
 class ImprovedWalkerAlgorithm:
@@ -30,38 +30,7 @@ class ImprovedWalkerAlgorithm:
         self.__print_nodes_coordinates()
 
     def __tree_layout(self, nx_graph: nx.Graph):
-        graph_nodes = []
-        new_edges = []
-        for node in nx_graph.nodes.items():
-            new_node = Node(name=node[0].name)
-            new_node.number = node[1]['child_position']
-            edges_to = {}
-            parent = None
-            for edge in nx_graph.edges:
-                try:
-                    edge_from, edge_to, weight = edge
-                except ValueError:
-                    edge_from, edge_to = edge
-                new_edges.append((edge_from.name, edge_to.name))
-                if edge_from.name is node[0].name:
-                    child_pos = [node[1]['child_position'] for node in nx_graph.nodes.items() if node[0] == edge_to][0]
-                    edges_to[child_pos] = edge_to.name
-                elif edge_to.name is node[0].name:
-                    parent = edge_from.name
-
-            new_node.edges_to = edges_to
-            new_node.parent = parent
-
-            if not parent:
-                new_node.root = True
-                self.graph.root_node = new_node
-
-            graph_nodes.append(new_node)
-
-        self.graph.nodes = graph_nodes
-        self.graph.edges = new_edges
-
-        self.graph.replace_node_names_with_node_objects()
+        self.graph = Graph.create_graph_from_nx(nx_graph)
 
     def __first_walk(self, node_v: Node):
         if not node_v.edges_to:
