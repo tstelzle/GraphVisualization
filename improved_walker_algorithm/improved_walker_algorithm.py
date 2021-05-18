@@ -30,7 +30,7 @@ class ImprovedWalkerAlgorithm:
         self.__print_nodes_coordinates()
 
     def __tree_layout(self, nx_graph: nx.Graph):
-        self.graph = Graph.create_graph_from_nx(nx_graph)
+        self.graph = Graph.create_graph_from_nx(nx_graph, parent=True)
 
     def __first_walk(self, node_v: Node):
         if not node_v.edges_to:

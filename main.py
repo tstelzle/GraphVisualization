@@ -4,6 +4,7 @@ import sys
 from improved_walker_algorithm import *
 from module_parse import *
 from module_color import Color
+from sugiyama_algorithm import SugiyamaAlgorithm
 
 graph_directory = 'directed_graph_examples'
 
@@ -19,7 +20,11 @@ def parse_parameters():
                 parse_and_draw_all_newick_files_with_improved_walker_algorithm('Phylogeny-Binaer')
             if argument == '-wg':
                 parse_and_draw_all_graphml_files_with_improved_walter_algorithm('graphml')
-
+            if argument == "-sn":
+                parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny')
+                parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny-Binaer')
+            if argument == "-sg":
+                parse_and_draw_all_graphml_files_with_sugiyama_algorithm('graphml')
     else:
         print('No Parameter specified - Don\'t know what to do!')
         exit(1)
@@ -54,6 +59,30 @@ def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: st
                                              filename=os.path.join(graph_directory, directory, filename),
                                              scale_x=scale_x,
                                              scale_y=scale_y)
+
+
+def parse_and_draw_all_newick_files_with_sugiyama_algorithm(directory: str):
+    print(Color.UNDERLINE + 'Parsing Files In', directory + ':', Color.END)
+    sugiyama_algorithm_object = SugiyamaAlgorithm()
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        current_newick_graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
+        sugiyama_algorithm_object.run(current_newick_graph)
+
+
+def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str):
+    """
+    Parses and draws all graphml files from the examples with the implemented Improved Walker Algorithm.
+    (The current examples are not suitable for the Improved Walker Algorithm.
+    :param directory: str, directory for the graphml files
+    :return: None
+    """
+    print(Color.UNDERLINE + 'Parsing Files In', directory, ':' + Color.END)
+    sugiyama_algorithm_object = SugiyamaAlgorithm()
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        current_graphml_graph = parse_graphml_file_newick_format(os.path.join(graph_directory, directory, filename))
+        sugiyama_algorithm_object.run(current_graphml_graph)
 
 
 def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: str):

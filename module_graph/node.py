@@ -3,6 +3,7 @@ class Node:
     def __init__(self, name):
         self.name = name
         self.edges_to = {}
+        self.edges_from = {}
         self.parent = None
         self.mod = 0
         self.thread = None
@@ -55,6 +56,12 @@ class Node:
                 if node is self:
                     return position
         return -1
+
+    def update_position(self, number: int):
+        start = number + 1
+        for child_counter in range(start, len(self.edges_to)):
+            self.edges_to[number] = self.edges_to[child_counter]
+
 
     def get_left_sibling(self):
         """
