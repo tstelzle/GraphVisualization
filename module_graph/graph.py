@@ -108,7 +108,7 @@ class Graph:
     def initialize_parent(graph):
         for node in graph.nodes:
             if len(node.edges_from) == 1:
-                node.parent = graph.get_node_by_name(node.edges_from[0])
+                node.parent = node.edges_from[0]
             if len(node.edges_from) > 1:
                 print('The node', node.name, 'has multiple parents.\nStopping!')
                 sys.exit(1)
@@ -130,6 +130,8 @@ class Graph:
         for node in self.nodes:
             for key, node_to in node.edges_to.items():
                 node.edges_to[key] = self.get_node_by_name(node_to)
+            for key, node_from in node.edges_from.items():
+                node.edges_from[key] = self.get_node_by_name(node_from)
 
             node.parent = self.get_node_by_name(node.parent)
 
@@ -276,7 +278,7 @@ class Graph:
                     deletion_counter += 1
                     node.update_position(child_number)
             while deletion_counter != 0:
-                del node.edges_to[len(node.edges_to) -1]
+                del node.edges_to[len(node.edges_to) - 1]
                 deletion_counter -= 1
 
     def get_maximal_degree_difference_node(self):
@@ -289,3 +291,19 @@ class Graph:
                 maximum = node
 
         return maximum_value, maximum
+
+    def get_nodes_without_y(self):
+        no_y_nodes = []
+        for node in self.nodes:
+            if node.y == -1:
+                no_y_nodes.append(node)
+
+        return len(no_y_nodes), no_y_nodes
+
+    def print_nodes_coordinates(self):
+        """
+        Prints all nodes with their coordinates.
+        :return: None
+        """
+        for node in self.nodes:
+            print(node.name, node.x, node.y)

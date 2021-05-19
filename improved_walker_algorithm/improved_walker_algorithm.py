@@ -27,7 +27,7 @@ class ImprovedWalkerAlgorithm:
         self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
         self.graph.draw_graph(filename, scale_x=scale_x, scale_y=scale_y)
 
-        self.__print_nodes_coordinates()
+        self.graph.print_nodes_coordinates()
 
     def __tree_layout(self, nx_graph: nx.Graph):
         self.graph = Graph.create_graph_from_nx(nx_graph, parent=True)
@@ -109,17 +109,9 @@ class ImprovedWalkerAlgorithm:
         :return: None
         """
         self.graph.print_breadth_first_search(self.graph.root_node)
-        self.__print_nodes_coordinates()
+        self.graph.print_nodes_coordinates()
         self.graph.print_root_counter()
         self.graph.print_node_count()
-
-    def __print_nodes_coordinates(self):
-        """
-        Prints all nodes with their coordinates.
-        :return: None
-        """
-        for node in self.graph.nodes:
-            print(node.name, node.x, node.y)
 
     @staticmethod
     def __next_left(node: Node):

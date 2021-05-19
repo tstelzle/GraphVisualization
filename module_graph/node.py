@@ -14,7 +14,7 @@ class Node:
         self.shift = 0
         self.number = 0
         self.x = -1
-        self.y = 0
+        self.y = -1
 
     def get_x_or_y(self, position):
         """
@@ -62,7 +62,6 @@ class Node:
         for child_counter in range(start, len(self.edges_to)):
             self.edges_to[number] = self.edges_to[child_counter]
 
-
     def get_left_sibling(self):
         """
         Returns the left sibling of the node. If the node has no left sibling None is returned
@@ -76,6 +75,16 @@ class Node:
         siblings = self.get_siblings()
         for position, node_name in siblings.items():
             if position == node_position - 1:
-                    return siblings[position]
+                return siblings[position]
 
         return None
+
+    def neighbours_have_y(self, maximum_value):
+        minimum = maximum_value
+        for position, node in self.edges_to.items():
+            if node.y == -1:
+                return False, -1
+            else:
+                if node.y < minimum:
+                    minimum = node.y
+        return True, minimum

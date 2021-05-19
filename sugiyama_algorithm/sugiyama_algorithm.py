@@ -16,10 +16,12 @@ class SugiyamaAlgorithm:
         self.__tree_layout(nx_graph)
         needed_nodes = self.greedy_cycle_removal()
         self.remove_cyclic_nodes(needed_nodes)
+        self.longest_path()
+        self.graph.print_nodes_coordinates()
 
     def remove_cyclic_nodes(self, needed_nodes: []):
         needed_nodes_names = [node.name for node in needed_nodes]
-        print(needed_nodes_names)
+        print('Needed Nodes:', needed_nodes_names)
         cyclic_nodes = [node for node in self.graph.nodes if node.name not in needed_nodes_names]
         for node in cyclic_nodes:
             self.graph.remove_node(node)
@@ -47,3 +49,18 @@ class SugiyamaAlgorithm:
                 copy_graph.remove_node(max_node)
 
         return s_1 + s_2
+
+    def longest_path(self):
+        m = len(self.graph.nodes)
+        sink_counter, sinks = self.graph.count_sinks()
+        for sink in sinks:
+            sink.y = m
+
+        no_y_nodes_counter, no_y_nodes = self.graph.get_nodes_without_y()
+        while no_y_nodes_counter != 0:
+            for node in no_y_nodes:
+                neighbour, minimum = node.neighbours_have_y(m)
+                if neighbour:
+                    node.y = minimum - 1
+                    continue
+            no_y_nodes_counter, no_y_nodes = self.graph.get_nodes_without_y()
