@@ -23,15 +23,6 @@ class ImprovedWalkerAlgorithm:
         :return:
         """
         self.__tree_layout(nx_graph)
-
-        for node in self.graph.nodes:
-            if len(node.edges_to) == 0:
-                for key, edge_from in node.edges_from.items():
-                    if edge_from.name == "mega_root":
-                        print(node)
-            # if len(node.edges_from) == 0:
-            #     print(node)
-
         self.__first_walk(self.graph.root_node)
         self.__second_walk(self.graph.root_node, self.graph.root_node.prelim)
         self.graph.draw_graph(filename, scale_x=scale_x, scale_y=scale_y)

@@ -27,8 +27,8 @@ def parse_graphml_file(filename: str, digraph=True):
     :return: nx.Graph()
     """
     graphml_graph = nx.read_graphml(filename)
-    # if digraph:
-    #     graphml_graph = graphml_graph.to_directed()
+    if digraph:
+        graphml_graph = graphml_graph.to_directed()
 
     return graphml_graph
 

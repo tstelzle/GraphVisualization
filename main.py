@@ -8,7 +8,11 @@ from sugiyama_algorithm import SugiyamaAlgorithm
 
 graph_directory = 'directed_graph_examples'
 
-# TODO Apparently the graphml files are read wrong, hence there are nodes which are not connected to graph at all -> walker fails. Important For Sugiyama?
+"""
+TODO Apparently the graphml files are read wrong 
+hence there are nodes which are not connected to graph at all -> walker fails.
+Important For Sugiyama -> Thats probably why no cycles are found
+"""
 
 def parse_parameters():
     if len(sys.argv) > 1:
