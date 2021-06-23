@@ -6,6 +6,9 @@ from copy import deepcopy
 
 class SugiyamaAlgorithm:
 
+    # TODO Eigenze zyklische Graphen erstellen lassen networkx.scale_free_graph
+    #   https://networkx.org/documentation/networkx-1.0/reference/generated/networkx.scale_free_graph.html#networkx.scale_free_graph
+
     def __init__(self):
         self.graph = Graph()
 

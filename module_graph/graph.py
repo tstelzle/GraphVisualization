@@ -19,7 +19,7 @@ class Graph:
         self.distance = 5
 
     @staticmethod
-    def create_graph_from_nx(nx_graph: nx.Graph, parent=False):
+    def create_graph_from_nx(nx_graph: nx.Graph, parent=False, mega_root=False):
         graph = Graph()
         graph_nodes = []
         new_edges = []
@@ -55,7 +55,7 @@ class Graph:
 
         graph.replace_node_names_with_node_objects()
 
-        Graph.check_roots(graph)
+        Graph.check_roots(graph, mega_root)
 
         if parent:
             graph.initialize_parent(graph)
@@ -84,23 +84,26 @@ class Graph:
         plt.savefig('output/' + fig_name + '.png', dpi=500, bbox_inches=None, format=None)
 
     @staticmethod
-    def check_roots(graph):
+    def check_roots(graph, mega_root):
         root_counter, roots = graph.count_roots()
         if root_counter == 1:
             root = graph.get_node_by_name(roots[0])
             root.root = True
             graph.root_node = root
-        else:
+        elif mega_root:
             print('Inserting Mega Root')
             mega_root = Node('mega_root')
+            mega_root.root = True
             root_counter = 0
             for current_root_name in roots:
                 current_root = graph.get_node_by_name(current_root_name)
-                current_root.edges_from[0] = mega_root.name
-                mega_root.edges_to[root_counter] = current_root_name
+                current_root.edges_from[0] = mega_root
+                mega_root.edges_to[root_counter] = current_root
                 root_counter += 1
+                current_root.root = False
                 graph.edges.append((mega_root.name, current_root_name))
             graph.nodes.append(mega_root)
+            graph.root_node = mega_root
 
         return graph
 

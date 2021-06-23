@@ -50,7 +50,6 @@ class Node:
         return None
 
     def get_position(self):
-
         if self.parent:
             for position, node in self.parent.edges_to.items():
                 if node is self:
