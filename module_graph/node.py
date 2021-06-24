@@ -85,7 +85,9 @@ class Node:
     def neighbours_have_y(self, maximum_value):
         minimum = maximum_value
         for position, node in self.edges_to.items():
-            if node.y == -1:
+            if node is None:
+                return False, -1
+            elif node.y == -1:
                 return False, -1
             else:
                 if node.y < minimum:

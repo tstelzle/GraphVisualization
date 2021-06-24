@@ -51,8 +51,8 @@ class SugiyamaAlgorithm:
                 s_1.append(source)
                 sources_counter, sources = copy_graph.count_roots()
             if copy_graph.nodes:
-                max_value, max_node = self.graph.get_maximal_degree_difference_node()
-                copy_graph.remove_node(max_node)
+                max_value, max_node = self.graph.get_maximal_degree_difference_node_name()
+                copy_graph.remove_node_by_name(max_node)
 
         return s_1 + s_2
 
@@ -60,7 +60,8 @@ class SugiyamaAlgorithm:
         m = len(self.graph.nodes)
         sink_counter, sinks = self.graph.count_sinks()
         for sink in sinks:
-            sink.y = m
+            node_sink = self.graph.get_node_by_name(sink)
+            node_sink.y = m
 
         no_y_nodes_counter, no_y_nodes = self.graph.get_nodes_without_y()
         while no_y_nodes_counter != 0:

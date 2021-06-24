@@ -85,8 +85,6 @@ class Graph:
                     for key, graph_node in nx_graph.nodes.items():
                         if graph_node['name'] == edge_to:
                             child_pos = graph_node['child_position']
-                    # child_pos = [node[1]['child_position'] for node in nx_graph.nodes.items()
-                    #              if node[1]['name'] == edge_to][0]
                     edges_to[child_pos] = edge_to
                 elif edge_to is node[1]['name']:
                     edges_from[parent_counter] = edge_from
@@ -184,7 +182,8 @@ class Graph:
             for key, node_from in node.edges_from.items():
                 node.edges_from[key] = self.get_node_by_name(node_from)
 
-            node.parent = self.get_node_by_name(node.parent)
+            if node.parent is not None:
+                node.parent = self.get_node_by_name(node.parent)
 
     def get_node_by_name(self, node_name):
         """
@@ -341,14 +340,14 @@ class Graph:
                     last_key -= 1
                 deletion_counter -= 1
 
-    def get_maximal_degree_difference_node(self):
+    def get_maximal_degree_difference_node_name(self):
         maximum = None
         maximum_value = None
         for node in self.nodes:
             adjacent_difference = len(node.edges_from) - len(node.edges_to)
             if maximum_value is None or adjacent_difference > maximum_value:
                 maximum_value = adjacent_difference
-                maximum = node
+                maximum = node.name
 
         return maximum_value, maximum
 
