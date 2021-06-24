@@ -1,34 +1,78 @@
 import networkx as nx
 import newick
+import copy
 
 
-def parse_graphml_file_newick_format(filename: str, digraph=True):
+def parse_graphml_file(filename: str, digraph=True):
     """
     Parses a graphml file and return the networkx graph. Forces each node to be in the newick.Node format.
     :param filename: str; full path of the to be parsed file
     :param digraph: Bool; is the graph a digraph
     :return: nx.Graph()
     """
-    graphml_graph = nx.read_graphml(filename, node_type=newick.Node)
+    graphml_graph = nx.read_graphml(filename)
+
     if digraph:
+        graph_edges = graphml_graph.edges
         graphml_graph = graphml_graph.to_directed()
+        edges = copy.deepcopy(graphml_graph.edges)
+        for edge in edges:
+            graphml_graph.remove_edge(edge[0], edge[1])
+        for edge in graph_edges:
+            graphml_graph.add_edge(edge[0], edge[1])
 
     for current_node in graphml_graph.nodes:
-        graphml_graph.add_node(current_node, name=current_node, child_position=0)
+        multiple_parents = []
+        one_parent = []
+        child_list = list(graphml_graph.successors(current_node))
+        for child_pos in range(len(child_list)):
+            child = child_list[child_pos]
+            parent_list = list(graphml_graph.predecessors(child))
+            if len(parent_list) > 1:
+                multiple_parents.append(child)
+            else:
+                one_parent.append(child)
 
-    return graphml_graph
+        if len(multiple_parents) == 0:
+            for child_pos in range(len(child_list)):
+                child = child_list[child_pos]
+                graphml_graph.add_node(child, name=current_node, child_position=child_pos)
+        else:
+            # The child position can have spaces. This is intended, hence the code can not iterate over the keys in edges_to.
+            # This cannot be fixed, as a two child could need the same child_position -> Error
+            child_position_attributes = nx.get_node_attributes(graphml_graph, 'child_position')
+            fixed_positions = {}
+            for child in child_list:
+                try:
+                    child_position = child_position_attributes[child]
+                    fixed_positions[child_position] = child
+                except KeyError:
+                    continue
 
+            for child_pos in range(len(multiple_parents)):
+                child = multiple_parents[child_pos]
+                if child_pos in fixed_positions.keys():
+                    child_pos += 1
+                    continue
+                if child in fixed_positions.values():
+                    continue
+                graphml_graph.add_node(child, name=child, child_position=child_pos)
 
-def parse_graphml_file(filename: str, digraph=True):
-    """
-    Parses a graphml file and return the networkx graph.
-    :param filename: str; full path of the to be parsed file
-    :param digraph: Bool; is the graph a digraph
-    :return: nx.Graph()
-    """
-    graphml_graph = nx.read_graphml(filename)
-    if digraph:
-        graphml_graph = graphml_graph.to_directed()
+            for child_pos in range(len(multiple_parents) + 1, len(one_parent) + len(multiple_parents)):
+                child = one_parent[child_pos - len(multiple_parents)]
+                if child_pos - len(multiple_parents) in fixed_positions.keys():
+                    child_pos += 1
+                    continue
+                if child in fixed_positions.values():
+                    continue
+                graphml_graph.add_node(child, name=child, child_position=child_pos)
+
+    for node in graphml_graph.nodes:
+        position_attributes = nx.get_node_attributes(graphml_graph, 'child_position')
+        try:
+            node_position = position_attributes[node]
+        except KeyError:
+            graphml_graph.add_node(node, name=node, child_position=0)
 
     return graphml_graph
 

@@ -8,11 +8,6 @@ from sugiyama_algorithm import SugiyamaAlgorithm
 
 graph_directory = 'directed_graph_examples'
 
-"""
-TODO Apparently the graphml files are read wrong 
-hence there are nodes which are not connected to graph at all -> walker fails.
-Important For Sugiyama -> Thats probably why no cycles are found
-"""
 
 def parse_parameters():
     if len(sys.argv) > 1:
@@ -90,8 +85,8 @@ def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str):
     sugiyama_algorithm_object = SugiyamaAlgorithm()
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
-        current_graphml_graph = parse_graphml_file_newick_format(os.path.join(graph_directory, directory, filename))
-        sugiyama_algorithm_object.run(current_graphml_graph)
+        current_graphml_graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
+        sugiyama_algorithm_object.run(current_graphml_graph, graphml=True)
 
 
 def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: str):
@@ -105,9 +100,14 @@ def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: s
     improved_walker_algorithm_object = ImprovedWalkerAlgorithm()
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
-        current_graphml_graph = parse_graphml_file_newick_format(os.path.join(graph_directory, directory, filename))
-        improved_walker_algorithm_object.run(current_graphml_graph,
-                                             filename=os.path.join('Walker', graph_directory, directory, filename))
+        current_graphml_graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
+        try:
+            improved_walker_algorithm_object.run(current_graphml_graph,
+                                                 filename=os.path.join('Walker', graph_directory, directory, filename),
+                                                 graphml=True)
+        except Exception as error:
+            if error.args[0] == "Multiple Parents":
+                continue
 
 
 if __name__ == '__main__':

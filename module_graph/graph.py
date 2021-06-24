@@ -1,8 +1,7 @@
 import os
-import sys
 
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from .node import Node
 
@@ -19,7 +18,7 @@ class Graph:
         self.distance = 5
 
     @staticmethod
-    def create_graph_from_nx(nx_graph: nx.Graph, parent=False, mega_root=False):
+    def create_graph_from_newick(nx_graph: nx.Graph, parent=False, mega_root=False):
         graph = Graph()
         graph_nodes = []
         new_edges = []
@@ -42,6 +41,55 @@ class Graph:
                     edges_to[child_pos] = edge_to.name
                 elif edge_to.name is node[0].name:
                     edges_from[parent_counter] = edge_from.name
+                    parent_counter += 1
+            not_copied_edges = False
+
+            new_node.edges_to = edges_to
+            new_node.edges_from = edges_from
+
+            graph_nodes.append(new_node)
+
+        graph.nodes = graph_nodes
+        graph.edges = new_edges
+
+        graph.replace_node_names_with_node_objects()
+
+        Graph.check_roots(graph, mega_root)
+
+        if parent:
+            graph.initialize_parent(graph)
+
+        return graph
+
+    @staticmethod
+    def create_graph_from_graphml(nx_graph: nx.Graph, parent=False, mega_root=False):
+        graph = Graph()
+        graph_nodes = []
+        new_edges = []
+        not_copied_edges = True
+        for node in nx_graph.nodes.items():
+            new_node = Node(name=node[1]['name'])
+            new_node.number = node[1]['child_position']
+            edges_to = {}
+            edges_from = {}
+            parent_counter = 0
+            for edge in nx_graph.edges:
+                try:
+                    edge_from, edge_to, weight = edge
+                except ValueError:
+                    edge_from, edge_to = edge
+                if not_copied_edges:
+                    new_edges.append((edge_from, edge_to))
+                if edge_from is node[1]['name']:
+                    child_pos = 0
+                    for key, graph_node in nx_graph.nodes.items():
+                        if graph_node['name'] == edge_to:
+                            child_pos = graph_node['child_position']
+                    # child_pos = [node[1]['child_position'] for node in nx_graph.nodes.items()
+                    #              if node[1]['name'] == edge_to][0]
+                    edges_to[child_pos] = edge_to
+                elif edge_to is node[1]['name']:
+                    edges_from[parent_counter] = edge_from
                     parent_counter += 1
             not_copied_edges = False
 
@@ -114,7 +162,7 @@ class Graph:
                 node.parent = node.edges_from[0]
             if len(node.edges_from) > 1:
                 print('The node', node.name, 'has multiple parents.\nStopping!')
-                sys.exit(1)
+                raise Exception('Multiple Parents')
 
         return graph
 
@@ -260,12 +308,17 @@ class Graph:
         sinks = []
         for node in node_list:
             if len(node.edges_to) == 0:
-                sinks.append(node)
+                sinks.append(node.name)
 
         return len(sinks), sinks
 
+    def remove_node_by_name(self, node_name: str):
+        for node in self.nodes:
+            if node.name == node_name:
+                self.remove_node(node)
+                break
+
     def remove_node(self, node: Node):
-        # node = self.get_node_by_name(node_name)
         self.nodes.remove(node)
 
         for edge_from, edge_to in self.edges:
@@ -281,7 +334,11 @@ class Graph:
                     deletion_counter += 1
                     node.update_position(child_number)
             while deletion_counter != 0:
-                del node.edges_to[len(node.edges_to) - 1]
+                last_key = max(node.edges_to.keys())
+                try:
+                    del node.edges_to[last_key]
+                except KeyError:
+                    last_key -= 1
                 deletion_counter -= 1
 
     def get_maximal_degree_difference_node(self):

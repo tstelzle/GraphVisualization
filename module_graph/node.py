@@ -58,8 +58,12 @@ class Node:
 
     def update_position(self, number: int):
         start = number + 1
-        for child_counter in range(start, len(self.edges_to)):
-            self.edges_to[number] = self.edges_to[child_counter]
+        last_key = max(self.edges_to.keys())
+        for child_counter in range(start, last_key):
+            try:
+                self.edges_to[number] = self.edges_to[child_counter]
+            except KeyError:
+                child_counter += 1
 
     def get_left_sibling(self):
         """

@@ -6,26 +6,29 @@ from copy import deepcopy
 
 class SugiyamaAlgorithm:
 
-    # TODO Eigenze zyklische Graphen erstellen lassen networkx.scale_free_graph
+    # TODO Eigene zyklische Graphen erstellen lassen networkx.scale_free_graph
     #   https://networkx.org/documentation/networkx-1.0/reference/generated/networkx.scale_free_graph.html#networkx.scale_free_graph
 
     def __init__(self):
         self.graph = Graph()
 
-    def __tree_layout(self, nx_graph: nx.Graph):
-        self.graph = Graph.create_graph_from_nx(nx_graph)
+    def __tree_layout(self, nx_graph: nx.Graph, graphml: bool):
+        if graphml:
+            self.graph = Graph.create_graph_from_graphml(nx_graph)
+        else:
+            self.graph = Graph.create_graph_from_newick(nx_graph)
 
-    def run(self, nx_graph: nx.Graph):
-        self.__tree_layout(nx_graph)
-        needed_nodes = self.greedy_cycle_removal()
-        self.remove_cyclic_nodes(needed_nodes)
+    def run(self, nx_graph: nx.Graph, graphml=False):
+        self.__tree_layout(nx_graph, graphml)
+        needed_node_names = self.greedy_cycle_removal()
+        self.remove_cyclic_nodes(needed_node_names)
         self.longest_path()
         self.graph.print_nodes_coordinates()
 
-    def remove_cyclic_nodes(self, needed_nodes: []):
-        needed_nodes_names = [node.name for node in needed_nodes]
-        print('Needed Nodes:', needed_nodes_names)
-        cyclic_nodes = [node for node in self.graph.nodes if node.name not in needed_nodes_names]
+    def remove_cyclic_nodes(self, needed_node_names: []):
+        # TODO all nodes are needed -> hence greedy_cycle_removal does not work
+        print('Needed Nodes:', needed_node_names)
+        cyclic_nodes = [node for node in self.graph.nodes if node.name not in needed_node_names]
         for node in cyclic_nodes:
             self.graph.remove_node(node)
             print('Removing node', node.name)
@@ -38,13 +41,13 @@ class SugiyamaAlgorithm:
             sinks_counter, sinks = copy_graph.count_sinks()
             while sinks_counter > 0:
                 sink = sinks[0]
-                copy_graph.remove_node(sink)
+                copy_graph.remove_node_by_name(sink)
                 s_2.append(sink)
                 sinks_counter, sinks = copy_graph.count_sinks()
             sources_counter, sources = copy_graph.count_roots()
             while sources_counter > 0:
                 source = sources[0]
-                copy_graph.remove_node(source)
+                copy_graph.remove_node_by_name(source)
                 s_1.append(source)
                 sources_counter, sources = copy_graph.count_roots()
             if copy_graph.nodes:
