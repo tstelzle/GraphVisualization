@@ -36,9 +36,10 @@ def parse_graphml_file(filename: str, digraph=True):
         if len(multiple_parents) == 0:
             for child_pos in range(len(child_list)):
                 child = child_list[child_pos]
-                graphml_graph.add_node(child, name=current_node, child_position=child_pos)
+                graphml_graph.add_node(child, name=child, child_position=child_pos)
         else:
-            # The child position can have spaces. This is intended, hence the code can not iterate over the keys in edges_to.
+            # The child position can have spaces.
+            # This is intended, hence the code can not iterate over the keys in edges_to.
             # This cannot be fixed, as a two child could need the same child_position -> Error
             child_position_attributes = nx.get_node_attributes(graphml_graph, 'child_position')
             fixed_positions = {}
@@ -70,7 +71,7 @@ def parse_graphml_file(filename: str, digraph=True):
     for node in graphml_graph.nodes:
         position_attributes = nx.get_node_attributes(graphml_graph, 'child_position')
         try:
-            node_position = position_attributes[node]
+            position_attributes[node]
         except KeyError:
             graphml_graph.add_node(node, name=node, child_position=0)
 

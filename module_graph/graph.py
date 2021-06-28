@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from .node import Node
+from module_color import Color
 
 
 class Graph:
@@ -85,6 +86,7 @@ class Graph:
                     for key, graph_node in nx_graph.nodes.items():
                         if graph_node['name'] == edge_to:
                             child_pos = graph_node['child_position']
+                            continue
                     edges_to[child_pos] = edge_to
                 elif edge_to is node[1]['name']:
                     edges_from[parent_counter] = edge_from
@@ -159,7 +161,9 @@ class Graph:
             if len(node.edges_from) == 1:
                 node.parent = node.edges_from[0]
             if len(node.edges_from) > 1:
-                print('The node', node.name, 'has multiple parents.\nStopping!')
+                print(Color.YELLOW, "Node: ", node.name, ", Parents: ",
+                      [node.name for node in node.edges_from.values()])
+                print(Color.RED, "Multiple Parents", Color.END)
                 raise Exception('Multiple Parents')
 
         return graph

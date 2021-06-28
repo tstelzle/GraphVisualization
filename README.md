@@ -2,23 +2,18 @@
 
 This implements various Python classes to represent and visualize graphs.
 
+When running "-h' on the main.py you can see a list of the options.
+
+## Example Files
+
+To run the specified algorithms on the Newick test files the option "-n" has to be added.
+For the Graphml files "-g" has to be specified.
+
 ## Improved Walker Algorithm
 
 For drawing the example graphs an implementation of the improved Walker Algorithm can be used.
 
-Therefore the following parameters are specified.
-
-#### Newick Files
-
-```shell
-python main.py -wn
-```
-
-#### Graphml Files
-
-```shell
-python main.py -wg
-```
+Therefore the option "-w" should be added as option.
 
 ## Sugiyama Algorithm
 
@@ -32,17 +27,12 @@ The algorithm uses the follwing steps
 4. Determining the second coordinate: Algorithm Of Brandes And Köpf
 5. Using the original edges for drawing
 
-#### Newick Files
+To run the sugiyama algorithm add the option "-s".
 
-```shell
-python main.py -sn
-```
+## Tests
 
-#### Graphml Files
-
-```shell
-python main.py -sg
-```
+There are various self implemented tests (No Test Framework).
+These can be run when the option "-t" is set.
 
 ## Required Libraries
 

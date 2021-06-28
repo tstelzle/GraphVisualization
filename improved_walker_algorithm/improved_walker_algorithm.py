@@ -13,7 +13,7 @@ class ImprovedWalkerAlgorithm:
         self.graph = Graph()
         self.default_ancestor = None
 
-    def run(self, nx_graph: nx.Graph, filename: str, scale_x=10, scale_y=10, graphml=False):
+    def run(self, nx_graph: nx.Graph, filename: str, scale_x=10, scale_y=10, graphml=False, test=False):
         """
         Starts the Improved Walker Algorithm
         :param nx_graph: Networkx Graph, for which the algorithm should be run
@@ -21,6 +21,7 @@ class ImprovedWalkerAlgorithm:
         :param scale_x: int, x scale for the image
         :param scale_y: int, y scale for the image
         :param graphml: bool, if the given nx_graph was read from a graphml file
+        :param test: bool, True if doctest should be run
         :return:
         """
         self.__tree_layout(nx_graph, graphml)
