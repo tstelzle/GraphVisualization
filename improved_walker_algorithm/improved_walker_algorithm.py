@@ -44,13 +44,13 @@ class ImprovedWalkerAlgorithm:
             else:
                 self.prelim = 0
         else:
-            default_ancestor = node_v.edges_to[0]
+            default_ancestor = node_v.get_first_child()
             for i in range(len(node_v.edges_to)):
-                node_w = node_v.edges_to[i]
+                node_w = node_v.get_child_at_key_position(i)
                 self.__first_walk(node_w)
                 default_ancestor = self.__apportion(node_w, default_ancestor)
             self.__execute_shifts(node_v)
-            midpoint = (node_v.edges_to[0].prelim + node_v.edges_to[len(node_v.edges_to) - 1].prelim) / 2
+            midpoint = (node_v.get_first_child().prelim + node_v.get_last_child().prelim) / 2
 
             left_sibling = node_v.get_left_sibling()
             if left_sibling:
@@ -120,14 +120,14 @@ class ImprovedWalkerAlgorithm:
     @staticmethod
     def __next_left(node: Node):
         if node.edges_to:
-            return node.edges_to[0]
+            return node.get_first_child()
         else:
             return node.thread
 
     @staticmethod
     def __next_right(node: Node):
         if node.edges_to:
-            return node.edges_to[len(node.edges_to) - 1]
+            return node.get_last_child()
         else:
             return node.thread
 
@@ -136,7 +136,7 @@ class ImprovedWalkerAlgorithm:
         shift = 0
         change = 0
         for descending_position in range(len(node.edges_to) - 1, -1, -1):
-            node_w = node.edges_to[descending_position]
+            node_w = node.get_child_at_key_position(descending_position)
             node_w.prelim += shift
             node_w.mod += shift
             change += node_w.change

@@ -43,9 +43,17 @@ class Node:
         :return: ?Node
         """
         if self.parent:
-            left_most_node = self.parent.edges_to[0]
+            left_most_node = self.parent.edges_to[min(self.parent.edges_to.keys())]
             if left_most_node is not self:
                 return left_most_node
+
+        return None
+
+    def get_right_most_sibling(self):
+        if self.parent:
+            right_most_node = self.parent.edges_to[max(self.parent.edges_to.keys())]
+            if right_most_node is not self:
+                return right_most_node
 
         return None
 
@@ -71,16 +79,33 @@ class Node:
         :return: ?Node
         """
         node_position = self.get_position()
-
         if node_position == 0 or node_position == -1:
             return None
+        position_keys = sorted(self.get_siblings().keys())
+        position_to_look_for = position_keys[position_keys.index(node_position)-1]
 
-        siblings = self.get_siblings()
-        for position, node_name in siblings.items():
-            if position == node_position - 1:
-                return siblings[position]
+        return self.get_siblings()[position_to_look_for]
 
-        return None
+    def get_right_sibling(self):
+        node_position = self.get_position()
+        position_keys = sorted(self.get_siblings().keys())
+        position_to_look_for = position_keys[position_keys.index(node_position)+1]
+        if position_to_look_for > max(position_keys):
+            return None
+        else:
+            return self.get_siblings()[position_to_look_for]
+
+    def get_child_at_key_position(self, current_position: int):
+        position = sorted(self.edges_to.keys())[current_position]
+        return self.edges_to[position]
+
+    def get_last_child(self):
+        maximum = max(self.edges_to.keys())
+        return self.edges_to[maximum]
+
+    def get_first_child(self):
+        minimum = min(self.edges_to.keys())
+        return self.edges_to[minimum]
 
     def neighbours_have_y(self, maximum_value):
         minimum = maximum_value
