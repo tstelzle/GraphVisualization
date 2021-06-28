@@ -19,7 +19,7 @@ class Graph:
         self.distance = 5
 
     @staticmethod
-    def create_graph_from_newick(nx_graph: nx.Graph, parent=False, mega_root=False):
+    def create_graph_from_newick(nx_graph: nx.Graph, parent=False, mega_root=False, loop=True):
         graph = Graph()
         graph_nodes = []
         new_edges = []
@@ -35,12 +35,14 @@ class Graph:
                     edge_from, edge_to, weight = edge
                 except ValueError:
                     edge_from, edge_to = edge
+                if edge_to == edge_from and not loop:
+                    continue
                 if not_copied_edges:
                     new_edges.append((edge_from.name, edge_to.name))
                 if edge_from.name is node[0].name:
                     child_pos = [node[1]['child_position'] for node in nx_graph.nodes.items() if node[0] == edge_to][0]
                     edges_to[child_pos] = edge_to.name
-                elif edge_to.name is node[0].name:
+                if edge_to.name is node[0].name:
                     edges_from[parent_counter] = edge_from.name
                     parent_counter += 1
             not_copied_edges = False
@@ -63,7 +65,7 @@ class Graph:
         return graph
 
     @staticmethod
-    def create_graph_from_graphml(nx_graph: nx.Graph, parent=False, mega_root=False):
+    def create_graph_from_graphml(nx_graph: nx.Graph, parent=False, mega_root=False, loop=True):
         graph = Graph()
         graph_nodes = []
         new_edges = []
@@ -79,6 +81,8 @@ class Graph:
                     edge_from, edge_to, weight = edge
                 except ValueError:
                     edge_from, edge_to = edge
+                if edge_to == edge_from and not loop:
+                    continue
                 if not_copied_edges:
                     new_edges.append((edge_from, edge_to))
                 if edge_from is node[1]['name']:
@@ -88,7 +92,7 @@ class Graph:
                             child_pos = graph_node['child_position']
                             continue
                     edges_to[child_pos] = edge_to
-                elif edge_to is node[1]['name']:
+                if edge_to is node[1]['name']:
                     edges_from[parent_counter] = edge_from
                     parent_counter += 1
             not_copied_edges = False

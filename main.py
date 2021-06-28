@@ -13,15 +13,15 @@ graph_directory = 'directed_graph_examples'
 def parse_parameters():
     parser = argparse.ArgumentParser(description='Run graph layout algorithms on given example files.')
     parser.add_argument("-w", "--walker", action="store_true",
-                      dest="walker", default=False, help="Improved Walker Algorithm")
+                        dest="walker", default=False, help="Improved Walker Algorithm")
     parser.add_argument("-s", "--sugiyama", action="store_true",
-                      dest="sugiyama", default=False, help="Sugiyama Algorithm")
+                        dest="sugiyama", default=False, help="Sugiyama Algorithm")
     parser.add_argument("-g", "--graphml", action="store_true",
-                      dest="graphml", default=False, help="Using Graphml Files")
+                        dest="graphml", default=False, help="Using Graphml Files")
     parser.add_argument("-n", "--newick", action="store_true",
-                      dest="newick", default=False, help="Using Newick Files")
+                        dest="newick", default=False, help="Using Newick Files")
     parser.add_argument("-t", "--tests", action="store_true",
-                      dest="tests", default=False, help="Running Tests")
+                        dest="tests", default=False, help="Running Tests")
 
     options = parser.parse_args()
 

@@ -33,9 +33,9 @@ class ImprovedWalkerAlgorithm:
 
     def __tree_layout(self, nx_graph: nx.Graph, graphml: bool):
         if graphml:
-            self.graph = Graph.create_graph_from_graphml(nx_graph=nx_graph, parent=True, mega_root=True)
+            self.graph = Graph.create_graph_from_graphml(nx_graph=nx_graph, parent=True, mega_root=True, loop=False)
         else:
-            self.graph = Graph.create_graph_from_newick(nx_graph, parent=True, mega_root=True)
+            self.graph = Graph.create_graph_from_newick(nx_graph, parent=True, mega_root=True, loop=False)
 
     def __first_walk(self, node_v: Node):
         if not node_v.edges_to:

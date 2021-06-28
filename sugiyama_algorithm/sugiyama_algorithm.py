@@ -14,11 +14,11 @@ class SugiyamaAlgorithm:
     def __init__(self):
         self.graph = Graph()
 
-    def __tree_layout(self, nx_graph: nx.Graph, graphml: bool):
+    def __tree_layout(self, nx_graph: nx.Graph, graphml: bool, loop):
         if graphml:
-            self.graph = Graph.create_graph_from_graphml(nx_graph)
+            self.graph = Graph.create_graph_from_graphml(nx_graph, loop=loop)
         else:
-            self.graph = Graph.create_graph_from_newick(nx_graph)
+            self.graph = Graph.create_graph_from_newick(nx_graph, loop=loop)
 
     def test_cycle(self):
         has_cycle = self.has_cycle()
@@ -40,7 +40,7 @@ class SugiyamaAlgorithm:
         :param graphml: bool, if the given nx_graph was read from a graphml file
         :param test: bool, True if doctest should be run
         """
-        self.__tree_layout(nx_graph, graphml)
+        self.__tree_layout(nx_graph, graphml, loop=False)
         if test:
             print("Test Cycle: ", self.test_cycle())
         needed_node_names = self.greedy_cycle_removal()
@@ -49,30 +49,42 @@ class SugiyamaAlgorithm:
         self.graph.print_nodes_coordinates()
 
     def get_cyclic_nodes(self, needed_node_names):
+        """
+        Returns a list of the nodes which have to be removed in order that there are no cycles in the graph.
+        :param needed_node_names: list, needed nodes in the graph
+        :return: list, the nodes which need to be removed
+        """
         return [node for node in self.graph.nodes if node.name not in needed_node_names]
 
     def remove_cyclic_nodes(self, needed_node_names: []):
         # TODO all nodes are needed -> hence greedy_cycle_removal does not work
         # print('Needed Nodes:', needed_node_names)
         cyclic_nodes = self.get_cyclic_nodes(needed_node_names)
+        print(cyclic_nodes)
         for node in cyclic_nodes:
             self.graph.remove_node(node)
             print('Removing node', node.name)
 
     def greedy_cycle_removal(self):
+        """
+        This method figures out the nodes, which are needed so that there is no cycle in the graph.
+        :return: list, List of needed nodes
+        """
         copy_graph = deepcopy(self.graph)
         s_1 = []
         s_2 = []
         while copy_graph.nodes:
             sinks_counter, sinks = copy_graph.count_sinks()
             while sinks_counter > 0:
-                sink = sinks[0]
+                sink = sinks.pop(0)
+                sinks_counter -= 1
                 copy_graph.remove_node_by_name(sink)
                 s_2.append(sink)
                 sinks_counter, sinks = copy_graph.count_sinks()
             sources_counter, sources = copy_graph.count_roots()
             while sources_counter > 0:
-                source = sources[0]
+                source = sources.pop(0)
+                sources_counter -= 1
                 copy_graph.remove_node_by_name(source)
                 s_1.append(source)
                 sources_counter, sources = copy_graph.count_roots()
