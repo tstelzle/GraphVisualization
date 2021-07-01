@@ -37,6 +37,7 @@ class SugiyamaAlgorithm:
     def run_sugiyama(self, nx_graph: nx.Graph, filename: str, graphml=False, test=False):
         """
         :param nx_graph: Networkx Graph, for which the algorithm should be run
+        :param filename: str, filename where the plotted graph should be saved
         :param graphml: bool, if the given nx_graph was read from a graphml file
         :param test: bool, True if doctest should be run
         """

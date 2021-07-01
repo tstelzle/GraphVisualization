@@ -23,10 +23,12 @@ def parse_parameters():
                         dest="newick", default=False, help="Using Newick Files")
     parser.add_argument("-t", "--tests", action="store_true",
                         dest="tests", default=False, help="Running Tests")
+    parser.add_argument("-sx", "--sugiyama-networkx", action="store_true",
+                        dest="sugiyama_x", default=False, help="Sugiyama Algorithm With NetworkX")
 
     options = parser.parse_args()
 
-    if not options.walker and not options.sugiyama:
+    if not options.walker and not options.sugiyama and not options.sugiyama_x:
         print(Color.RED, "No Algorithm Specified - STOPPING", Color.END)
         sys.exit()
     if not options.newick and not options.graphml:
@@ -41,13 +43,20 @@ def parse_parameters():
         if options.graphml:
             parse_and_draw_all_graphml_files_with_improved_walter_algorithm('graphml', options.tests)
 
+    if options.sugiyama_x:
+        print(Color.GREEN, "Running Sugiyama Algorithm With NetworkX", Color.END)
+        if options.graphml:
+            parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx('graphml')
+        if options.newick:
+            print("This options is currently not supported.")
+
     if options.sugiyama:
         print(Color.GREEN, "Running Sugiyama Algorithm", Color.END)
         if options.newick:
             parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny', options.tests)
             parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny-Binaer', options.tests)
         if options.graphml:
-            parse_and_draw_all_graphml_files_with_sugiyama_algorithm('graphml')
+            parse_and_draw_all_graphml_files_with_sugiyama_algorithm('graphml', options.test)
 
 
 def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: str, test: bool):
@@ -96,12 +105,16 @@ def parse_and_draw_all_newick_files_with_sugiyama_algorithm(directory: str, test
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         current_newick_graph = parse_newick_file(os.path.join(graph_directory, directory, filename))
         try:
-            sugiyama_algorithm_object.run_sugiyama(current_newick_graph, test=test)
+            sugiyama_algorithm_object.run_sugiyama(current_newick_graph,
+                                                   filename=os.path.join('Sugiyama',
+                                                                         graph_directory, directory, filename),
+                                                   test=test)
         except Exception as error:
             if error.args[0] == "Cycle":
                 continue
 
-def deprecated_parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, test: bool):
+
+def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, test: bool):
     """
     Parses and draws all graphml files from the examples with the implemented Sugiyama Algorithm.
     :param directory: str, directory for the graphml files
@@ -122,12 +135,13 @@ def deprecated_parse_and_draw_all_graphml_files_with_sugiyama_algorithm(director
         except Exception as error:
             if error.args[0] == "Cycle":
                 continue
-                
-                
-def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str):
+
+
+def parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx(directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(os.path.join(graph_directory, directory, filename))
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(
+            os.path.join(graph_directory, directory, filename))
         sugiyama_algorithm_object.run_sugiyama()
 
 
