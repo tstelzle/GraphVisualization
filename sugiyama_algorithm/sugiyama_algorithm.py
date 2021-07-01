@@ -34,7 +34,7 @@ class SugiyamaAlgorithm:
         print(Color.RED + "Cycle Not Removed" + Color.END)
         raise Exception('Cycle')
 
-    def run_sugiyama(self, nx_graph: nx.Graph, graphml=False, test=False):
+    def run_sugiyama(self, nx_graph: nx.Graph, filename: str, graphml=False, test=False):
         """
         :param nx_graph: Networkx Graph, for which the algorithm should be run
         :param graphml: bool, if the given nx_graph was read from a graphml file
@@ -46,7 +46,12 @@ class SugiyamaAlgorithm:
         needed_node_names = self.greedy_cycle_removal()
         self.remove_cyclic_nodes(needed_node_names)
         self.longest_path()
-        self.graph.print_nodes_coordinates()
+        level_dict = self.graph.get_level_with_nodes()
+        for level, nodes in level_dict.items():
+            print(level, ":", nodes)
+        self.graph.assign_preliminary_x()
+        # self.graph.print_nodes_coordinates()
+        self.graph.draw_graph(filename=filename, labels=False, scale_x=70, scale_y=15)
 
     def get_cyclic_nodes(self, needed_node_names):
         """
@@ -60,7 +65,7 @@ class SugiyamaAlgorithm:
         # TODO all nodes are needed -> hence greedy_cycle_removal does not work
         # print('Needed Nodes:', needed_node_names)
         cyclic_nodes = self.get_cyclic_nodes(needed_node_names)
-        print(cyclic_nodes)
+        print("Cyclic Nodes: ", cyclic_nodes)
         for node in cyclic_nodes:
             self.graph.remove_node(node)
             print('Removing node', node.name)
@@ -89,7 +94,7 @@ class SugiyamaAlgorithm:
                 s_1.append(source)
                 sources_counter, sources = copy_graph.count_roots()
             if copy_graph.nodes:
-                max_value, max_node = self.graph.get_maximal_degree_difference_node_name()
+                max_value, max_node = copy_graph.get_maximal_degree_difference_node_name()
                 copy_graph.remove_node_by_name(max_node)
 
         return s_1 + s_2
@@ -107,7 +112,7 @@ class SugiyamaAlgorithm:
                 neighbour, minimum = node.neighbours_have_y(m)
                 if neighbour:
                     node.y = minimum - 1
-                    continue
+                    break
             no_y_nodes_counter, no_y_nodes = self.graph.get_nodes_without_y()
 
     def has_cycle(self):
@@ -116,7 +121,6 @@ class SugiyamaAlgorithm:
             reachable_nodes = []
             active_nodes = []
             active_nodes += node.edges_to.values()
-            # reachable_nodes += node.edges_to.values()
             while active_nodes:
                 current_node = active_nodes[0]
                 if current_node.name not in reachable_nodes:

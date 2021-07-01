@@ -7,6 +7,28 @@ from .node import Node
 from module_color import Color
 
 
+def save_fig(fig_name: str):
+    """
+    Function to save a plt figure with the given figure name.
+    :param fig_name: str; Filename for the saved figure
+    :return: None
+    """
+    directories = '/'.join(fig_name.split('/')[:-1])
+    create_missing_dir('output/' + directories)
+    plt.savefig('output/' + fig_name + '.png', dpi=300, bbox_inches=None, format=None)
+    print("Figure saved in ", 'output/' + fig_name + '.png')
+
+
+def create_missing_dir(path):
+    """
+    Creates missing directories. Skips if the directory already exists.
+    :param path: str; Directory path
+    :return: None
+    """
+    if not (os.path.exists(path) and os.path.isdir(path)):
+        os.makedirs(path)
+
+
 class Graph:
     """
     Class Graph
@@ -113,27 +135,6 @@ class Graph:
             graph.initialize_parent(graph)
 
         return graph
-
-    @staticmethod
-    def create_missing_dir(path):
-        """
-        Creates missing directories. Skips if the directory already exists.
-        :param path: str; Directory path
-        :return: None
-        """
-        if not (os.path.exists(path) and os.path.isdir(path)):
-            os.makedirs(path)
-
-    @staticmethod
-    def save_fig(fig_name: str):
-        """
-        Function to save a plt figure with the given figure name.
-        :param fig_name: str; Filename for the saved figure
-        :return: None
-        """
-        directories = '/'.join(fig_name.split('/')[:-1])
-        Graph.create_missing_dir('output/' + directories)
-        plt.savefig('output/' + fig_name + '.png', dpi=500, bbox_inches=None, format=None)
 
     @staticmethod
     def check_roots(graph, mega_root):
@@ -263,11 +264,12 @@ class Graph:
 
         return node_dict
 
-    def draw_graph(self, filename: str, scale_x=10, scale_y=10):
+    def draw_graph(self, filename: str, scale_x=10, scale_y=10, labels=True):
         """
         Draws the current graph from top to bottom. The image is then shown and
         also saved in the output directory with the specified filename.
         The scale parameters define the size of the image.
+        :param labels: bool, print labels if True
         :param filename: str, Filename for the images
         :param scale_x: int
         :param scale_y: int
@@ -280,15 +282,15 @@ class Graph:
         nx_graph.add_edges_from(self.edges)
 
         plt.figure(1, figsize=(scale_x, scale_y))
-        nx.draw(nx_graph, node_dict, with_labels=True)
+        nx.draw(nx_graph, node_dict, with_labels=labels)
         plt.gca().invert_yaxis()
-        Graph.save_fig(filename)
+        save_fig(filename)
         plt.show()
 
     def print_breadth_first_search(self, node: Node):
         """
         Prints a list for each level with the belonging node names. The tree is traversed with Breadth First Search.
-        :param node: node
+        :param node: node, start node (root)
         :return: None
         """
         queue = [node]
@@ -310,6 +312,26 @@ class Graph:
         for i in range(1, len(level_dict) + 1):
             print(i, level_dict[i])
 
+    def get_level_with_nodes(self):
+        level_dict = {}
+        for node in self.nodes:
+            if node.y in level_dict:
+                level_dict[node.y].append(node.name)
+            else:
+                level_dict[node.y] = [node.name]
+
+        return level_dict
+
+    def assign_preliminary_x(self):
+        level_dict = self.get_level_with_nodes()
+
+        for level, nodes in level_dict.items():
+            x = 0
+            for node_name in nodes:
+                node = self.get_node_by_name(node_name)
+                node.x = x
+                x += 10
+
     def count_sinks(self):
         node_list = self.nodes
         sinks = []
@@ -328,25 +350,28 @@ class Graph:
     def remove_node(self, node: Node):
         self.nodes.remove(node)
 
-        for edge_from, edge_to in self.edges:
+        for edge in self.edges:
+            edge_from, edge_to = edge
             if node.name == edge_from or node.name == edge_to:
-                self.edges.remove((edge_from, edge_to))
+                self.edges.remove(edge)
 
-        for node in self.nodes:
-            if node.parent not in self.nodes:
-                node.parent = None
-            deletion_counter = 0
-            for child_number, child_node in node.edges_to.items():
-                if child_node not in self.nodes:
-                    deletion_counter += 1
-                    node.update_position(child_number)
-            while deletion_counter != 0:
-                last_key = max(node.edges_to.keys())
-                try:
-                    del node.edges_to[last_key]
-                except KeyError:
-                    last_key -= 1
-                deletion_counter -= 1
+        for current_node in self.nodes:
+            if current_node.parent is node:
+                current_node.parent = None
+
+            keys_to_delete = []
+            for child_number, child_node in current_node.edges_to.items():
+                if child_node is node:
+                    keys_to_delete.append(child_number)
+            for key in keys_to_delete:
+                del current_node.edges_to[key]
+
+            keys_to_delete = []
+            for parent_number, parent_node in current_node.edges_from.items():
+                if parent_node is node:
+                    keys_to_delete.append(parent_number)
+            for key in keys_to_delete:
+                del current_node.edges_from[key]
 
     def get_maximal_degree_difference_node_name(self):
         maximum = None
@@ -373,4 +398,4 @@ class Graph:
         :return: None
         """
         for node in self.nodes:
-            print(node.name, node.x, node.y)
+            print(node.name, 'X: ', node.x, ',Y: ', node.y)

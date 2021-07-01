@@ -2,6 +2,7 @@ import os
 import argparse
 import sys
 
+import sugiyama_algorithm.sugiyama_nx
 from improved_walker_algorithm import *
 from module_color import Color
 from module_parse import *
@@ -46,7 +47,7 @@ def parse_parameters():
             parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny', options.tests)
             parse_and_draw_all_newick_files_with_sugiyama_algorithm('Phylogeny-Binaer', options.tests)
         if options.graphml:
-            parse_and_draw_all_graphml_files_with_sugiyama_algorithm('graphml', options.tests)
+            parse_and_draw_all_graphml_files_with_sugiyama_algorithm('graphml')
 
 
 def parse_and_draw_all_newick_files_with_improved_walker_algorithm(directory: str, test: bool):
@@ -100,8 +101,7 @@ def parse_and_draw_all_newick_files_with_sugiyama_algorithm(directory: str, test
             if error.args[0] == "Cycle":
                 continue
 
-
-def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, test: bool):
+def deprecated_parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, test: bool):
     """
     Parses and draws all graphml files from the examples with the implemented Sugiyama Algorithm.
     :param directory: str, directory for the graphml files
@@ -114,10 +114,21 @@ def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, tes
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         current_graphml_graph = parse_graphml_file(os.path.join(graph_directory, directory, filename))
         try:
-            sugiyama_algorithm_object.run_sugiyama(current_graphml_graph, graphml=True, test=test)
+            sugiyama_algorithm_object.run_sugiyama(current_graphml_graph,
+                                                   filename=os.path.join('Sugiyama', graph_directory, directory,
+                                                                         filename),
+                                                   graphml=True,
+                                                   test=test)
         except Exception as error:
             if error.args[0] == "Cycle":
                 continue
+                
+                
+def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str):
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(os.path.join(graph_directory, directory, filename))
+        sugiyama_algorithm_object.run_sugiyama()
 
 
 def parse_and_draw_all_graphml_files_with_improved_walter_algorithm(directory: str, test: bool):
