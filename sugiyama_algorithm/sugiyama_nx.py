@@ -1,10 +1,11 @@
-import networkx as nx
-import module_parse as ps
 import copy
-import matplotlib.pyplot as plt
-from module_color import *
-import module_graph as my_graph
 import os
+
+import matplotlib.pyplot as plt
+import networkx as nx
+
+import module_graph as my_graph
+from module_color import *
 
 
 class SugiyamaNX:
@@ -18,8 +19,59 @@ class SugiyamaNX:
         node_order = self.greedy_cycle_removal()
         self.revert_edges(node_order)
         self.longest_path()
+        self.add_dummy_vertices()
         self.assign_prelim_x()
         self.draw_graph()
+
+    def add_dummy_vertices(self):
+        edges_to_add = []
+        edges_to_remove = []
+
+        # TODO there was an error with 'dictionary changed size during iteration'
+        #  -> could not find it
+        #  -> this is the solution
+        edges = copy.deepcopy(self.graph.edges)
+
+        for edge in edges:
+            try:
+                edge_from, edge_to, weight = edge
+            except ValueError:
+                edge_from, edge_to = edge
+
+            y_attributes = nx.get_node_attributes(self.graph, 'y')
+            child_position_attributes = nx.get_node_attributes(self.graph, 'child_position')
+            difference = y_attributes[edge_to] - y_attributes[edge_from]
+            if difference != 1:
+                self.graph.remove_edge(edge_from, edge_to)
+                edges_to_remove.append((edge_from, edge_to))
+                node_counter = 1
+                current_node = edge_from
+                while difference > 1:
+                    new_node_name = "dummy" + str(node_counter) + "_" + edge_from
+                    if node_counter == 1:
+                        child_position = child_position_attributes[edge_to]
+                    else:
+                        child_position = 0
+                    self.graph.add_node(new_node_name,
+                                        y=y_attributes[edge_from] + node_counter,
+                                        name=new_node_name,
+                                        child_position=child_position)
+                    edges_to_add.append((current_node, new_node_name))
+                    self.graph.add_edge(current_node, new_node_name, weight=1)
+                    current_node = new_node_name
+                    difference -= 1
+                    node_counter += 1
+                    y_attributes = nx.get_node_attributes(self.graph, 'y')
+                    child_position_attributes = nx.get_node_attributes(self.graph, 'child_position')
+
+    # def global_sifting(self, sifting_rounds: int):
+    #     block_list = []
+    #     for p in range(sifting_rounds):
+    #         for a in block_list:
+    #             block_list = self.sifting_step(block_list, a)
+    #
+    #     for node in self.graph.nodes:
+    #         self.graph.add_node(node, pi=)
 
     def remove_loops(self):
         edges_to_remove = []
@@ -27,7 +79,7 @@ class SugiyamaNX:
         for edge in self.graph.edges:
             try:
                 edge_from, edge_to, weight = edge
-            except:
+            except ValueError:
                 edge_from, edge_to = edge
             if edge_from == edge_to:
                 edges_to_remove.append(edge_from)
@@ -42,7 +94,7 @@ class SugiyamaNX:
         for edge in self.graph.edges:
             try:
                 edge_from, edge_to, weight = edge
-            except:
+            except ValueError:
                 edge_from, edge_to = edge
             if node_order.index(edge_from) < node_order.index(edge_to):
                 reverting_edges.append(edge)
@@ -50,7 +102,7 @@ class SugiyamaNX:
         for edge in reverting_edges:
             try:
                 edge_from, edge_to, weight = edge
-            except:
+            except ValueError:
                 edge_from, edge_to = edge
             self.graph.remove_edge(edge_from, edge_to)
             self.graph.add_edge(edge_to, edge_from, weight=weight)
@@ -178,10 +230,7 @@ class SugiyamaNX:
         nx.draw(self.graph, pos_dict, with_labels=labels)
         plt.gca().invert_yaxis()
         my_graph.save_fig(fig_name=os.path.join("Sugiyama", self.filename))
-        try:
-            plt.show()
-        except:
-            print(Color.RED, "Cannot Print Graph.", Color.END)
+        plt.show()
 
     def has_cycle(self):
         reachability = {}
