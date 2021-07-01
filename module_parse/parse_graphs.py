@@ -78,6 +78,58 @@ def parse_graphml_file(filename: str, digraph=True):
     return graphml_graph
 
 
+def parse_newick_file_by_name(filename: str, digraph=True):
+    """
+    Parses a newick file and returns the networkx graph.
+    :param filename: str; full path of the to be parsed file
+    :param digraph: Bool; is the graph a digraph
+    :return: nx.Graph()
+    """
+    tree = newick.read(filename)
+
+    if digraph:
+        graph_newick = nx.DiGraph()
+    else:
+        graph_newick = nx.Graph
+
+    none_counter = 1
+
+    # Adding root node
+    if tree[0].name is None:
+        graph_newick.add_node("None_1", child_position=0)
+        none_counter += 1
+    else:
+        graph_newick.add_node(tree[0].name, child_position=0)
+
+    while tree:
+        tree_node = tree[0]
+        tree_node, none_counter = rename_none_node(tree_node, none_counter)
+        graph_newick, descendants, none_counter = add_newick_node_and_edge_by_name(graph_newick, tree_node, none_counter)
+        tree += descendants
+        tree.remove(tree_node)
+
+    return graph_newick
+
+
+def add_newick_node_and_edge_by_name(nx_graph: nx.Graph, current_node, none_counter: int):
+    """
+    Adding the descendants of the current node to the graph and adding the according edge.
+    Rename a node if the name is None.
+    :param nx_graph: the network x graph to which node and edge should be added
+    :param current_node: the current node from the newick graph
+    :param none_counter: an integer representing the amount of None node
+    :return: (graph, descendants, none_counter)
+    """
+    descendants = current_node.descendants
+    for child_pos in range(len(descendants)):
+        descendants[child_pos], none_counter = rename_none_node(descendants[child_pos], none_counter)
+        nx_graph.add_node(descendants[child_pos].name, child_position=child_pos)
+        nx_graph.add_edge(current_node.name, descendants[child_pos].name)
+
+    return nx_graph, descendants, none_counter
+
+
+
 def parse_newick_file(filename: str, digraph=True):
     """
     Parses a newick file and returns the networkx graph.

@@ -9,9 +9,9 @@ import os
 
 class SugiyamaNX:
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, graph: nx.DiGraph):
         self.filename = filename
-        self.graph = ps.parse_graphml_file(filename=self.filename)
+        self.graph = graph
 
     def run_sugiyama(self):
         self.remove_loops()
@@ -25,7 +25,10 @@ class SugiyamaNX:
         edges_to_remove = []
 
         for edge in self.graph.edges:
-            edge_from, edge_to, weight = edge
+            try:
+                edge_from, edge_to, weight = edge
+            except:
+                edge_from, edge_to = edge
             if edge_from == edge_to:
                 edges_to_remove.append(edge_from)
 
@@ -34,14 +37,21 @@ class SugiyamaNX:
 
     def revert_edges(self, node_order: [str]):
         reverting_edges = []
+        weight = 1
 
         for edge in self.graph.edges:
-            edge_from, edge_to, weight = edge
+            try:
+                edge_from, edge_to, weight = edge
+            except:
+                edge_from, edge_to = edge
             if node_order.index(edge_from) < node_order.index(edge_to):
                 reverting_edges.append(edge)
 
         for edge in reverting_edges:
-            edge_from, edge_to, weight = edge
+            try:
+                edge_from, edge_to, weight = edge
+            except:
+                edge_from, edge_to = edge
             self.graph.remove_edge(edge_from, edge_to)
             self.graph.add_edge(edge_to, edge_from, weight=weight)
 
@@ -168,7 +178,10 @@ class SugiyamaNX:
         nx.draw(self.graph, pos_dict, with_labels=labels)
         plt.gca().invert_yaxis()
         my_graph.save_fig(fig_name=os.path.join("Sugiyama", self.filename))
-        plt.show()
+        try:
+            plt.show()
+        except:
+            print(Color.RED, "Cannot Print Graph.", Color.END)
 
     def has_cycle(self):
         reachability = {}

@@ -48,7 +48,8 @@ def parse_parameters():
         if options.graphml:
             parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx('graphml')
         if options.newick:
-            print("This options is currently not supported.")
+            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny')
+            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny-Binaer')
 
     if options.sugiyama:
         print(Color.GREEN, "Running Sugiyama Algorithm", Color.END)
@@ -140,8 +141,18 @@ def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, tes
 def parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx(directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(
-            os.path.join(graph_directory, directory, filename))
+        file_path = os.path.join(graph_directory, directory, filename)
+        current_graphml_graph = parse_graphml_file(file_path)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph)
+        sugiyama_algorithm_object.run_sugiyama()
+
+
+def parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx(directory: str):
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        file_path = os.path.join(graph_directory, directory, filename)
+        current_graphml_graph = parse_newick_file_by_name(file_path)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph)
         sugiyama_algorithm_object.run_sugiyama()
 
 
