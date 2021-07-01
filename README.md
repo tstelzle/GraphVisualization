@@ -27,7 +27,10 @@ The algorithm uses the follwing steps
 4. Determining the second coordinate: Algorithm Of Brandes And Köpf
 5. Using the original edges for drawing
 
-To run the sugiyama algorithm add the option "-s".
+To run the sugiyama algorithm add the option "-sx".
+
+The other option "-s" uses a graph data structure, which is self implemented and not by networks. 
+There is an error in the remove_edges, hence this implementation is not working. 
 
 ## Tests
 
