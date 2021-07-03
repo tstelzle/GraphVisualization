@@ -1,29 +1,48 @@
 import copy
 import os
+import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
 
-import module_graph as my_graph
 from module_color import *
 
 
 class SugiyamaNX:
 
     def __init__(self, filename: str, graph: nx.DiGraph):
-        self.filename = filename
+        self.filename = os.path.join("output", "Sugiyama", filename + ".png")
+        self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.filename)
         self.graph = graph
 
     def run_sugiyama(self):
         self.remove_loops()
         node_order = self.greedy_cycle_removal()
-        self.revert_edges(node_order)
+        reverted_edges = self.revert_edges(node_order)
         self.longest_path()
-        self.add_dummy_vertices()
-        self.assign_prelim_x()
-        self.draw_graph()
+        block_list = self.add_dummy_vertices_create_blocklist()
+        block_list = self.initialize_block_position(block_list)
+        self.global_sifting(1, block_list)
+        # self.assign_prelim_x()
+        self.draw_graph(reverted_edges=reverted_edges)
 
-    def add_dummy_vertices(self):
+    def update_node_x_from_blocklist(self, block_list: {}):
+        for node in self.graph.nodes:
+            node_name = node
+            if "dummy" in node:
+                node_name = "_".join(node_name.split("_")[1:])
+            self.graph.add_node(node, x=block_list[node_name]["x"])
+
+    @staticmethod
+    def initialize_block_position(block_list: {}):
+        random_pos = random.sample(range(0, len(block_list)), len(block_list))
+        for block_key, block_value in block_list.items():
+            position = random_pos.pop()
+            block_value["x"] = position
+
+        return block_list
+
+    def add_dummy_vertices_create_blocklist(self):
         edges_to_add = []
         edges_to_remove = []
 
@@ -31,6 +50,8 @@ class SugiyamaNX:
         #  -> could not find it
         #  -> this is the solution
         edges = copy.deepcopy(self.graph.edges)
+
+        block_list = {}
 
         for edge in edges:
             try:
@@ -46,8 +67,10 @@ class SugiyamaNX:
                 edges_to_remove.append((edge_from, edge_to))
                 node_counter = 1
                 current_node = edge_from
+                current_block = []
+                block_identifier = "dummy" + "_" + edge_from + "_" + edge_to
                 while difference > 1:
-                    new_node_name = "dummy" + str(node_counter) + "_" + edge_from
+                    new_node_name = str(node_counter) + "_" + block_identifier
                     if node_counter == 1:
                         child_position = child_position_attributes[edge_to]
                     else:
@@ -56,6 +79,7 @@ class SugiyamaNX:
                                         y=y_attributes[edge_from] + node_counter,
                                         name=new_node_name,
                                         child_position=child_position)
+                    current_block.append(new_node_name)
                     edges_to_add.append((current_node, new_node_name))
                     self.graph.add_edge(current_node, new_node_name, weight=1)
                     current_node = new_node_name
@@ -63,15 +87,24 @@ class SugiyamaNX:
                     node_counter += 1
                     y_attributes = nx.get_node_attributes(self.graph, 'y')
                     child_position_attributes = nx.get_node_attributes(self.graph, 'child_position')
+                self.graph.add_edge(current_node, edge_to, weight=1)
+                block_list[block_identifier] = {"block": current_block, "x": -1}
 
-    # def global_sifting(self, sifting_rounds: int):
-    #     block_list = []
-    #     for p in range(sifting_rounds):
-    #         for a in block_list:
-    #             block_list = self.sifting_step(block_list, a)
-    #
-    #     for node in self.graph.nodes:
-    #         self.graph.add_node(node, pi=)
+        for node in self.graph.nodes:
+            block_list[node] = {"block": node, "x": -1}
+
+        return block_list
+
+    def global_sifting(self, sifting_rounds: int, block_list: {}):
+        for p in range(sifting_rounds):
+            for block_key, block_value in block_list.items():
+                block_value["block"] = self.sifting_step(block_value["block"])
+
+        self.update_node_x_from_blocklist(block_list)
+
+    @staticmethod
+    def sifting_step(block_list: [str]):
+        return block_list
 
     def remove_loops(self):
         edges_to_remove = []
@@ -89,6 +122,7 @@ class SugiyamaNX:
 
     def revert_edges(self, node_order: [str]):
         reverting_edges = []
+        reverted_edges = []
         weight = 1
 
         for edge in self.graph.edges:
@@ -106,6 +140,9 @@ class SugiyamaNX:
                 edge_from, edge_to = edge
             self.graph.remove_edge(edge_from, edge_to)
             self.graph.add_edge(edge_to, edge_from, weight=weight)
+            reverted_edges.append((edge_to, edge_from, weight))
+
+        return reverted_edges
 
     def greedy_cycle_removal(self):
         copy_graph = copy.deepcopy(self.graph)
@@ -209,14 +246,16 @@ class SugiyamaNX:
 
         return len(roots), roots
 
-    def draw_graph(self, scale_x=70, scale_y=15, labels=False):
+    def draw_graph(self, reverted_edges: [], scale_x=70, scale_y=15, labels=False, show_graph=False):
         """
         Draws the current graph from top to bottom. The image is then shown and
         also saved in the output directory with the specified filename.
         The scale parameters define the size of the image.
+        :param reverted_edges: [], edges which have been reverted in the graph
         :param labels: bool, print labels if True
         :param scale_x: int
         :param scale_y: int
+        :param show_graph: bool, if matplotlib should directly show the graph
         :return: None
         """
         pos_dict = {}
@@ -226,11 +265,28 @@ class SugiyamaNX:
         for node in self.graph.nodes:
             pos_dict[node] = (x_attributes[node], y_attributes[node])
 
+        node_color = []
+        for node in self.graph.nodes:
+            if "dummy" in node:
+                node_color.append("red")
+            else:
+                node_color.append("blue")
+
+        edge_color = []
+        for edge in self.graph.edges:
+            if edge in reverted_edges:
+                edge_color.append("green")
+            else:
+                edge_color.append("black")
+
         plt.figure(1, figsize=(scale_x, scale_y))
-        nx.draw(self.graph, pos_dict, with_labels=labels)
+        nx.draw(self.graph, pos=pos_dict, node_color=node_color, edge_color=edge_color, with_labels=labels)
         plt.gca().invert_yaxis()
-        my_graph.save_fig(fig_name=os.path.join("Sugiyama", self.filename))
-        plt.show()
+        plt.savefig(self.filename, format='png', dpi=300)
+        print("Figure saved in", self.filepath)
+        if show_graph:
+            plt.show()
+        plt.clf()
 
     def has_cycle(self):
         reachability = {}
