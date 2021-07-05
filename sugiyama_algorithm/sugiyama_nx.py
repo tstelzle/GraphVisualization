@@ -14,6 +14,7 @@ class SugiyamaNX:
         self.filename = os.path.join("output", "Sugiyama", filename + ".png")
         self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.filename)
         self.graph = graph
+        self.block_lookup = {}
 
     def run_sugiyama(self):
         self.remove_loops()
@@ -22,23 +23,20 @@ class SugiyamaNX:
         self.longest_path()
         block_list = self.add_dummy_vertices_create_blocklist()
         block_list = self.initialize_block_position(block_list)
-        self.global_sifting(1, block_list)
+        self.global_sifting(block_list)
         # self.assign_prelim_x()
         self.draw_graph(reverted_edges=reverted_edges)
 
-    def update_node_x_from_blocklist(self, block_list: {}):
+    def update_node_x_from_blocklist(self, block_list: []):
         for node in self.graph.nodes:
             node_name = node
             if "dummy" in node:
                 node_name = "_".join(node_name.split("_")[1:])
-            self.graph.add_node(node, x=block_list[node_name]["x"])
+            self.graph.add_node(node, x=block_list.index(self.block_lookup[node_name]))
 
     @staticmethod
-    def initialize_block_position(block_list: {}):
-        random_pos = random.sample(range(0, len(block_list)), len(block_list))
-        for block_key, block_value in block_list.items():
-            position = random_pos.pop()
-            block_value["x"] = position
+    def initialize_block_position(block_list: []):
+        random.shuffle(block_list)
 
         return block_list
 
@@ -51,7 +49,7 @@ class SugiyamaNX:
         #  -> this is the solution
         edges = copy.deepcopy(self.graph.edges)
 
-        block_list = {}
+        block_list = []
 
         for edge in edges:
             try:
@@ -88,17 +86,23 @@ class SugiyamaNX:
                     y_attributes = nx.get_node_attributes(self.graph, 'y')
                     child_position_attributes = nx.get_node_attributes(self.graph, 'child_position')
                 self.graph.add_edge(current_node, edge_to, weight=1)
-                block_list[block_identifier] = {"block": current_block, "x": -1}
+                block_list.append(current_block)
+                self.block_lookup[block_identifier] = current_block
+                # block_list[block_identifier] = {"block": current_block, "x": -1}
 
         for node in self.graph.nodes:
-            block_list[node] = {"block": node, "x": -1}
+            block_list.append([node])
+            self.block_lookup[node] = [node]
 
         return block_list
 
-    def global_sifting(self, sifting_rounds: int, block_list: {}):
+    def global_sifting(self, block_list: [], sifting_rounds: int = 10):
         for p in range(sifting_rounds):
-            for block_key, block_value in block_list.items():
-                block_value["block"] = self.sifting_step(block_value["block"])
+
+            block_list_copy = copy.deepcopy(block_list)
+            for block in block_list_copy:
+                # block_list = self.sifting_step(block_list, block)
+                block_list = block_list
 
         self.update_node_x_from_blocklist(block_list)
 
