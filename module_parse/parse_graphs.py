@@ -13,13 +13,7 @@ def parse_graphml_file(filename: str, digraph=True):
     graphml_graph = nx.read_graphml(filename)
 
     if digraph:
-        graph_edges = graphml_graph.edges
-        graphml_graph = graphml_graph.to_directed()
-        edges = copy.deepcopy(graphml_graph.edges)
-        for edge in edges:
-            graphml_graph.remove_edge(edge[0], edge[1])
-        for edge in graph_edges:
-            graphml_graph.add_edge(edge[0], edge[1])
+        graphml_graph = nx.DiGraph(graphml_graph)
 
     for current_node in graphml_graph.nodes:
         multiple_parents = []
