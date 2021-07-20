@@ -2,6 +2,7 @@ import copy
 import os
 import random
 import logging
+import time
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -13,8 +14,7 @@ class SugiyamaNX:
 
     def __init__(self, filename: str, graph: nx.DiGraph):
         self.filename = os.path.join("output", "Sugiyama", filename + ".png")
-        self.sifting_logname = os.path.join("output", "Sugiyama", filename + "_sifting_step.log")
-        self.method_logname = os.path.join("output", "Sugiyama", filename + "_method.log")
+        self.logname = os.path.join("output", "Sugiyama", filename + "_log.log")
         self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.filename)
         self.graph = graph
         # block_id -> block
@@ -25,13 +25,17 @@ class SugiyamaNX:
         self.i_minus = {}
         self.i_plus = {}
         self.pi = {}
-        # logging.basicConfig(filename=self.logname, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+        # logging.basicConfig(filename=self.logname, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
         self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        self.sifting_step_logger = self.setup_logger('sifting_step_logger', self.sifting_logname)
-        self.method_logger = self.setup_logger('method_logger', self.method_logname)
+        self.logger = logging.getLogger(self.filename).setLevel(logging.DEBUG)
 
-    def setup_logger(self, name, log_file, level=logging.INFO):
-        handler = logging.FileHandler(log_file)
+    def setup_logger(self, name, level=logging.INFO):
+
+        if self.logger:
+            self.logger.handlers[0].close()
+            self.logger.handlers = []
+
+        handler = logging.FileHandler(self.logname, mode='w')
         handler.setFormatter(self.formatter)
 
         logger = logging.getLogger(name)
@@ -41,20 +45,26 @@ class SugiyamaNX:
         return logger
 
     def run_sugiyama(self):
-        self.method_logger.info('run_sugiyama')
+        self.logger = self.setup_logger(self.filename)
+        self.logger.debug('run_sugiyama')
+        start_time = time.time()
         self.remove_loops()
         node_order = self.greedy_cycle_removal()
         reverted_edges = self.revert_edges(node_order)
-        print(reverted_edges)
         self.longest_path()
         block_list = self.add_dummy_vertices_create_blocklist()
         block_list = self.initialize_block_position(block_list)
         self.global_sifting(block_list)
-        # self.assign_prelim_x()
+        end_time = time.time()
+        self.logger.info('Duration Sugiyama: ' + str(end_time-start_time) + 's')
+        start_time = time.time()
         self.draw_graph(reverted_edges=reverted_edges)
+        end_time = time.time()
+        self.logger.info('Duration Drawing: ' + str(end_time-start_time) + 's')
 
     def update_node_x_from_blocklist(self, block_list: []):
-        self.method_logger.info('update_node_x_from_blocklist')
+        self.logger.debug('update_node_x_from_blocklist')
+
         for node in self.graph.nodes:
             node_name = node
             if "dummy" in node:
@@ -62,7 +72,6 @@ class SugiyamaNX:
             self.graph.add_node(node, x=block_list.index(self.block_lookup[node_name]))
 
     def get_block_id_from_block(self, given_block: [str]):
-        # self.method_logger.info('get_block_id_from_block')
         returned_id = None
         for block_id, block in self.block_lookup.items():
             if len(block) == len(given_block):
@@ -85,13 +94,11 @@ class SugiyamaNX:
         return block_list
 
     def add_dummy_vertices_create_blocklist(self):
-        self.method_logger.info('add_dummy_vertices_create_blocklist')
+        self.logger.debug('add_dummy_vertices_create_blocklist')
+
         edges_to_add = []
         edges_to_remove = []
 
-        # TODO there was an error with 'dictionary changed size during iteration'
-        #  -> could not find it
-        #  -> this is the solution
         edges = copy.deepcopy(self.graph.edges)
 
         block_list = []
@@ -141,68 +148,26 @@ class SugiyamaNX:
         return block_list
 
     def global_sifting(self, block_list: [], sifting_rounds: int = 1):
-        self.method_logger.info('global_sifting')
-        # self.initialize_adjancies()
+        self.logger.debug('global_sifting')
 
         block_counter = sifting_rounds * len(block_list)
         counter = 0
 
         for p in range(sifting_rounds):
-            self.sifting_step_logger.info('Sifting Round: ' + str((counter // len(block_list)) + 1))
+            self.logger.info('Sifting Round: ' + str((counter // len(block_list)) + 1))
             block_list_copy = copy.deepcopy(block_list)
             for block in block_list_copy:
                 block_string = "[" + ",".join(block) + "]"
-                self.sifting_step_logger.info("Iterating block " + str(counter) + " from " + str(block_counter) + ", " + block_string)
+                self.logger.info("Iterating block " + str(counter) + " from " + str(block_counter) + ", " + block_string)
                 block_list = self.sifting_step(block_list, block)
                 counter += 1
 
         self.update_node_x_from_blocklist(block_list)
 
-    def initialize_adjancies(self):
-        self.method_logger.info('initialize_adjancies')
-        for block_id in self.block_lookup.keys():
-
-            if "dummy" in block_id:
-                first_node_of_block = "1_" + block_id
-                last_node_of_block = str(len(self.block_lookup[block_id])) + "_" + block_id
-            else:
-                first_node_of_block = block_id
-                last_node_of_block = block_id
-
-            # Keine eingehende Kante in das Segement
-            self.n_minus[block_id] = list(self.graph.predecessors(first_node_of_block))
-
-            # Keine ausgehende Kante in das Segement
-            self.n_plus[block_id] = list(self.graph.successors(last_node_of_block))
-
-            # Kindposition des Blocks zu der eingehenden Kante
-            for n_minus_index in range(len(self.n_minus[block_id])):
-                if block_id not in self.i_minus.keys():
-                    self.i_minus[block_id] = [
-                        list(self.graph.successors(self.n_minus[block_id][n_minus_index])).index(first_node_of_block)]
-                else:
-                    self.i_minus[block_id].append(
-                        list(self.graph.successors(self.n_minus[block_id][n_minus_index])).index(first_node_of_block))
-
-            # Elternposition des Blocks zu der ausgehenden Kante
-            for n_plus_index in range(len(self.n_plus[block_id])):
-                if block_id not in self.i_plus.keys():
-                    self.i_plus[block_id] = [
-                        list(self.graph.predecessors(self.n_plus[block_id][n_plus_index])).index(last_node_of_block)]
-                else:
-                    self.i_plus[block_id].append(
-                        list(self.graph.predecessors(self.n_plus[block_id][n_plus_index])).index(last_node_of_block))
-
     def sort_adjacencies(self, block_list: []):
-        self.method_logger.info('sort_adjacencies')
-
-        # TODO p[edge] gives key error -> Initialized with default value 0
-        # !!!!!!!!!!!!!!!!!! NOT ANYMORE
+        self.logger.debug('sort_adjacencies')
 
         p = {}
-
-        # for edge in self.graph.edges:
-        #     p[edge] = 0
 
         self.n_minus = {}
         self.i_minus = {}
@@ -231,12 +196,6 @@ class SugiyamaNX:
                     edge_to_block_id = self.get_block_id_from_block(self.get_block_to_node(edge_to, block_list))
                     j = len(self.n_plus[edge_from_block_id])
 
-                    try:
-                        index = self.n_plus[edge_from_block_id].index(edge_to)
-                        print(index)
-                    except ValueError:
-                        pass
-
                     self.n_plus[edge_from_block_id].insert(j, edge_to)
 
                     node_block_position = self.pi[edge_from_block_id]
@@ -256,12 +215,6 @@ class SugiyamaNX:
                     edge_to_block_id = self.get_block_id_from_block(self.get_block_to_node(edge_to, block_list))
                     j = len(self.n_minus[edge_to_block_id])
 
-                    try:
-                        index = self.n_minus[edge_from_block_id].index(edge_to)
-                        print(index)
-                    except ValueError:
-                        pass
-
                     self.n_minus[edge_to_block_id].insert(j, edge_from)
 
                     node_block_position = self.pi[edge_to_block_id]
@@ -271,8 +224,8 @@ class SugiyamaNX:
                         self.i_minus[edge_to_block_id].insert(j, p[edge])
                         self.i_plus[edge_from_block_id].insert(p[edge], j)
 
-    def get_position_of_block(self, block_list: [], block: [str]):
-        # self.method_logger.info('get_position_of_block')
+    @staticmethod
+    def get_position_of_block(block_list: [], block: [str]):
         for index in range(len(block_list)):
             if len(block_list[index]) == len(block):
                 result = all(map(lambda x, y: x == y, block_list[index], block))
@@ -281,30 +234,31 @@ class SugiyamaNX:
 
         raise Exception("Position For Block Not Found.")
 
-    def get_block_to_node(self, node: str, block_list: [str]):
-        # self.method_logger.info('get_block_to_node')
+    @staticmethod
+    def get_block_to_node(node: str, block_list: [str]):
         for block in block_list:
             if node in block:
                 return block
 
         raise Exception('Block To Node Not Found')
 
-    def upper(self, block: [str]):
-        # self.method_logger.info('upper')
+    @staticmethod
+    def upper(block: [str]):
         if "dummy" in block[0]:
             return "1_" + block[0][2:]
         else:
             return block[0]
 
-    def lower(self, block: [str]):
-        # self.method_logger.info('lower')
+    @staticmethod
+    def lower(block: [str]):
         if "dummy" in block[0]:
             return str(len(block)) + "_" + block[0][2:]
         else:
             return block[0]
 
     def sifting_step(self, block_list: [], block: [str]):
-        self.method_logger.info('sifting_step')
+        self.logger.debug('sifting_step')
+
         # New ordering of B' with A put to front
         block_list_copy = copy.deepcopy(block_list)
         block_list_copy.remove(block)
@@ -334,7 +288,7 @@ class SugiyamaNX:
         return block_list_copy
 
     def get_levels_of_block(self, block_key: str):
-        # self.method_logger.info('get_levels_of_block')
+        # self.logger.debug('get_levels_of_block')
         levels = []
         y_attributes = nx.get_node_attributes(self.graph, 'y')
         for block in self.block_lookup[block_key]:
@@ -343,7 +297,8 @@ class SugiyamaNX:
         return levels
 
     def sifting_swap(self, block_key_a: str, block_key_b: str, block_list: []):
-        self.method_logger.info('sifting_swap')
+        self.logger.debug('sifting_swap')
+
         l_list = []
         delta = 0
         y_attributes = nx.get_node_attributes(self.graph, 'y')
@@ -404,7 +359,7 @@ class SugiyamaNX:
         return block_list, delta
 
     def uswap(self, n_d_a: [str], n_d_b: [str], block_list: [str]):
-        self.method_logger.info('uswap')
+        self.logger.debug('uswap')
 
         r = len(n_d_a)
         s = len(n_d_b)
@@ -412,7 +367,6 @@ class SugiyamaNX:
         i = 0
         j = 0
         while i < r and j < s:
-            print('while uswap: i', i, "r:", r, "j:", j, "s:", s)
             pos_a = self.pi[self.get_block_id_from_block(self.get_block_to_node(n_d_a[i], block_list))]
             pos_b = self.pi[self.get_block_id_from_block(self.get_block_to_node(n_d_b[j], block_list))]
             if pos_a < pos_b:
@@ -429,7 +383,7 @@ class SugiyamaNX:
         return c
 
     def update_adjacencies(self, a_node: str, b_node: str, d, block_list: [str]):
-        self.method_logger.info('update_adjacencies')
+        self.logger.debug('update_adjacencies')
 
         a_block = self.get_block_to_node(a_node, block_list)
         b_block = self.get_block_to_node(b_node, block_list)
@@ -531,7 +485,8 @@ class SugiyamaNX:
                     j += 1
 
     def remove_loops(self):
-        self.method_logger.info('remove_loops')
+        self.logger.debug('remove_loops')
+
         edges_to_remove = []
 
         for edge in self.graph.edges:
@@ -546,7 +501,7 @@ class SugiyamaNX:
             self.graph.remove_edge(edge, edge)
 
     def revert_edges(self, node_order: [str]):
-        self.method_logger.info('revert_edges')
+        self.logger.debug('revert_edges')
         reverting_edges = []
         reverted_edges = []
         weight = 1
@@ -571,7 +526,8 @@ class SugiyamaNX:
         return reverted_edges
 
     def greedy_cycle_removal(self):
-        self.method_logger.info('greedy_cycle_removal')
+        self.logger.debug('greedy_cycle_removal')
+
         copy_graph = copy.deepcopy(self.graph)
         s_1 = []
         s_2 = []
@@ -600,7 +556,8 @@ class SugiyamaNX:
         return s_1 + s_2
 
     def get_level_dic(self):
-        self.method_logger.info('get_level_dic')
+        self.logger.debug('get_level_dic')
+
         y_attributes = nx.get_node_attributes(self.graph, 'y')
         level_dic = {}
         for node in y_attributes.keys():
@@ -612,18 +569,9 @@ class SugiyamaNX:
 
         return level_dic
 
-    def assign_prelim_x(self):
-        self.method_logger('assign_prelim_x')
-        level_dic = self.get_level_dic()
-        node_distance = 10
-        for level in level_dic.keys():
-            node_position = 0
-            for node in level_dic[level]:
-                self.graph.add_node(node, x=node_position)
-                node_position += node_distance
-
     def longest_path(self):
-        self.method_logger.info('longest_path')
+        self.logger.debug('longest_path')
+
         node_amount = len(self.graph.nodes)
         sink_counter, sinks = self.get_sinks(self.graph)
         for sink in sinks:
@@ -645,7 +593,8 @@ class SugiyamaNX:
         nx.set_node_attributes(self.graph, y_attributes, "y")
 
     def get_max_degree_difference_node(self, graph: nx.Graph):
-        self.method_logger.info('get_max_degree_difference_node')
+        self.logger.debug('get_max_degree_difference_node')
+
         max_difference = -1
         max_node = None
         for node in graph.nodes:
@@ -659,7 +608,7 @@ class SugiyamaNX:
         return max_node, max_difference
 
     def get_sinks(self, graph: nx.DiGraph):
-        self.method_logger.info('get_sinks')
+        self.logger.debug('get_sinks')
         sinks = []
         for node in graph.nodes:
             if graph.out_degree(node) == 0:
@@ -668,7 +617,7 @@ class SugiyamaNX:
         return len(sinks), sinks
 
     def get_roots(self, graph: nx.Graph):
-        self.method_logger.info('get_roots')
+        self.logger.debug('get_roots')
         roots = []
         for node in graph.nodes:
             if graph.in_degree(node) == 0:
@@ -676,7 +625,7 @@ class SugiyamaNX:
 
         return len(roots), roots
 
-    def draw_graph(self, reverted_edges: [], scale_x=70, scale_y=15, labels=False, show_graph=False):
+    def draw_graph(self, reverted_edges: [], scale_x=140, scale_y=30, labels=False, show_graph=False):
         """
         Draws the current graph from top to bottom. The image is then shown and
         also saved in the output directory with the specified filename.
@@ -688,13 +637,14 @@ class SugiyamaNX:
         :param show_graph: bool, if matplotlib should directly show the graph
         :return: None
         """
-        self.method_logger.info('draw_graph')
+        self.logger.debug('draw_graph')
+
         pos_dict = {}
 
         y_attributes = nx.get_node_attributes(self.graph, 'y')
         x_attributes = nx.get_node_attributes(self.graph, 'x')
         for node in self.graph.nodes:
-            pos_dict[node] = (x_attributes[node], y_attributes[node])
+            pos_dict[node] = (x_attributes[node]*10, y_attributes[node]*5)
 
         node_color = []
         for node in self.graph.nodes:
@@ -720,7 +670,8 @@ class SugiyamaNX:
         plt.clf()
 
     def has_cycle(self):
-        self.method_logger.info('has_cycle')
+        self.logger.debug('has_cycle')
+
         reachability = {}
         for node in self.graph.nodes:
             reachable_nodes = []
