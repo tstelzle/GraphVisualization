@@ -10,12 +10,19 @@ import networkx as nx
 from module_color import *
 
 
+def initialize_output_directory(directory: str):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        os.chmod(directory, 0o777)
+
+
 class SugiyamaNX:
 
-    def __init__(self, filename: str, graph: nx.DiGraph):
-        self.filename = os.path.join("output", "Sugiyama", filename + ".png")
-        self.logname = os.path.join("output", "Sugiyama", filename + "_log.log")
+    def __init__(self, filename: str, graph: nx.DiGraph, output_directory="output"):
+        self.filename = os.path.join(output_directory, "Sugiyama", filename + ".png")
+        self.logname = os.path.join(output_directory, "Sugiyama", filename + "_log.log")
         self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.filename)
+        self.file_directory = "/".join(self.filepath.split('/')[:-1])
         self.graph = graph
         # block_id -> block
         self.block_lookup = {}
@@ -25,12 +32,10 @@ class SugiyamaNX:
         self.i_minus = {}
         self.i_plus = {}
         self.pi = {}
-        # logging.basicConfig(filename=self.logname, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
         self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         self.logger = logging.getLogger(self.filename).setLevel(logging.DEBUG)
 
-    def setup_logger(self, name, level=logging.INFO):
-
+    def setup_logger(self, name, level=logging.DEBUG):
         if self.logger:
             self.logger.handlers[0].close()
             self.logger.handlers = []
@@ -45,6 +50,7 @@ class SugiyamaNX:
         return logger
 
     def run_sugiyama(self):
+        initialize_output_directory(self.file_directory)
         self.logger = self.setup_logger(self.filename)
         self.logger.debug('run_sugiyama')
         start_time = time.time()
@@ -56,11 +62,11 @@ class SugiyamaNX:
         block_list = self.initialize_block_position(block_list)
         self.global_sifting(block_list)
         end_time = time.time()
-        self.logger.info('Duration Sugiyama: ' + str(end_time-start_time) + 's')
+        self.logger.info('Duration Sugiyama: ' + str(end_time - start_time) + 's')
         start_time = time.time()
         self.draw_graph(reverted_edges=reverted_edges)
         end_time = time.time()
-        self.logger.info('Duration Drawing: ' + str(end_time-start_time) + 's')
+        self.logger.info('Duration Drawing: ' + str(end_time - start_time) + 's')
 
     def update_node_x_from_blocklist(self, block_list: []):
         self.logger.debug('update_node_x_from_blocklist')
@@ -126,7 +132,10 @@ class SugiyamaNX:
                 while difference > 1:
                     new_node_name = str(node_counter) + "_" + block_identifier
                     if node_counter == 1:
-                        child_position = child_position_attributes[edge_to]
+                        try:
+                            child_position = child_position_attributes[edge_to]
+                        except KeyError:
+                            child_position = 0
                     else:
                         child_position = 0
                     self.graph.add_node(new_node_name,
@@ -158,7 +167,8 @@ class SugiyamaNX:
             block_list_copy = copy.deepcopy(block_list)
             for block in block_list_copy:
                 block_string = "[" + ",".join(block) + "]"
-                self.logger.info("Iterating block " + str(counter) + " from " + str(block_counter) + ", " + block_string)
+                self.logger.info(
+                    "Iterating block " + str(counter) + " from " + str(block_counter) + ", " + block_string)
                 block_list = self.sifting_step(block_list, block)
                 counter += 1
 
@@ -276,7 +286,9 @@ class SugiyamaNX:
         pos_star = 0
 
         for pos in range(1, len(block_list_copy) - 1):
-            block_list_copy, crossings_new = self.sifting_swap(self.get_block_id_from_block(block), self.get_block_id_from_block(block_list_copy[pos]), block_list_copy)
+            block_list_copy, crossings_new = self.sifting_swap(self.get_block_id_from_block(block),
+                                                               self.get_block_id_from_block(block_list_copy[pos]),
+                                                               block_list_copy)
             crossings += crossings_new
             if crossings < crossings_star:
                 crossings_star = crossings
@@ -345,10 +357,10 @@ class SugiyamaNX:
 
         if pos_a < pos_b:
             elem_a = block_list.pop(pos_a)
-            elem_b = block_list.pop(pos_b-1)
+            elem_b = block_list.pop(pos_b - 1)
         else:
             elem_a = block_list.pop(pos_b)
-            elem_b = block_list.pop(pos_a-1)
+            elem_b = block_list.pop(pos_a - 1)
 
         block_list.insert(pos_a, elem_b)
         block_list.insert(pos_b, elem_a)
@@ -463,7 +475,7 @@ class SugiyamaNX:
 
                     if pos_a_z < pos_b_z:
                         self.n_plus[z].pop(pos_a_z)
-                        self.n_plus[z].pop(pos_b_z-1)
+                        self.n_plus[z].pop(pos_b_z - 1)
                         elem_a = self.i_plus[z].pop(pos_a_z)
                         elem_b = self.i_plus[z].pop(pos_b_z - 1)
                     else:
@@ -644,7 +656,7 @@ class SugiyamaNX:
         y_attributes = nx.get_node_attributes(self.graph, 'y')
         x_attributes = nx.get_node_attributes(self.graph, 'x')
         for node in self.graph.nodes:
-            pos_dict[node] = (x_attributes[node]*10, y_attributes[node]*5)
+            pos_dict[node] = (x_attributes[node] * 10, y_attributes[node] * 5)
 
         node_color = []
         for node in self.graph.nodes:

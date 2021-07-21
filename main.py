@@ -25,6 +25,8 @@ def parse_parameters():
                         dest="tests", default=False, help="Running Tests")
     parser.add_argument("-sx", "--sugiyama-networkx", action="store_true",
                         dest="sugiyama_x", default=False, help="Sugiyama Algorithm With NetworkX")
+    parser.add_argument("-gm", "--graphml-method", action="store_true",
+                        dest="graphml_method", default=False, help="Parse Graphml Files Only With Edge Key method-call")
 
     options = parser.parse_args()
 
@@ -50,6 +52,8 @@ def parse_parameters():
         if options.newick:
             parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny')
             parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny-Binaer')
+        if options.graphml_method:
+            parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx('graphml')
 
     if options.sugiyama:
         print(Color.GREEN, "Running Sugiyama Algorithm", Color.END)
@@ -143,7 +147,16 @@ def parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx(directory: str):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         file_path = os.path.join(graph_directory, directory, filename)
         current_graphml_graph = parse_graphml_file(file_path)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory="output_2")
+        sugiyama_algorithm_object.run_sugiyama()
+
+
+def parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx(directory: str):
+    for filename in os.listdir(os.path.join(graph_directory, directory)):
+        print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
+        file_path = os.path.join(graph_directory, directory, filename)
+        current_graphml_graph = GraphML(file_path).to_graph('method-call')
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory="output_2")
         sugiyama_algorithm_object.run_sugiyama()
 
 
