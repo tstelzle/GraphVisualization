@@ -28,7 +28,7 @@ def parse_parameters():
     parser.add_argument("-gm", "--graphml-method", action="store_true",
                         dest="graphml_method", default=False, help="Parse Graphml Files Only With Edge Key method-call")
     parser.add_argument("-o", "--output-directory", action="store",
-                        dest="output_directory", default=False, help="Specifies The Output Directory")
+                        dest="output_directory", default="output", help="Specifies The Output Directory")
 
     options = parser.parse_args()
 
@@ -167,7 +167,7 @@ def parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx(directory: str, o
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         file_path = os.path.join(graph_directory, directory, filename)
         current_graphml_graph = parse_newick_file_by_name(file_path)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory=output_directory)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(filename=file_path, graph=current_graphml_graph, output_directory=output_directory)
         sugiyama_algorithm_object.run_sugiyama()
 
 

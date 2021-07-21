@@ -1,4 +1,5 @@
 import copy
+import math
 import os
 import random
 import logging
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from module_color import *
+from math import ceil, floor, inf
 
 
 def initialize_output_directory(directory: str):
@@ -31,6 +33,13 @@ class SugiyamaNX:
         self.n_plus = {}
         self.i_minus = {}
         self.i_plus = {}
+        self.align = {}
+        self.root = {}
+        self.sink = {}
+        self.shift = {}
+        self.x = {}
+        self.mark_segments = []
+        self.delta = 5
         self.pi = {}
         self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         self.logger = logging.getLogger(self.filename).setLevel(logging.DEBUG)
@@ -60,7 +69,8 @@ class SugiyamaNX:
         self.longest_path()
         block_list = self.add_dummy_vertices_create_blocklist()
         block_list = self.initialize_block_position(block_list)
-        self.global_sifting(block_list)
+        block_list = self.global_sifting(block_list)
+        self.brandes_koepf(block_list)
         end_time = time.time()
         self.logger.info('Duration Sugiyama: ' + str(end_time - start_time) + 's')
         start_time = time.time()
@@ -173,6 +183,8 @@ class SugiyamaNX:
                 counter += 1
 
         self.update_node_x_from_blocklist(block_list)
+
+        return block_list
 
     def sort_adjacencies(self, block_list: []):
         self.logger.debug('sort_adjacencies')
@@ -637,7 +649,7 @@ class SugiyamaNX:
 
         return len(roots), roots
 
-    def draw_graph(self, reverted_edges: [], scale_x=140, scale_y=30, labels=False, show_graph=False):
+    def draw_graph(self, reverted_edges: [], scale_x=200, scale_y=30, labels=False, show_graph=False):
         """
         Draws the current graph from top to bottom. The image is then shown and
         also saved in the output directory with the specified filename.
@@ -675,7 +687,7 @@ class SugiyamaNX:
         plt.figure(1, figsize=(scale_x, scale_y))
         nx.draw(self.graph, pos=pos_dict, node_color=node_color, edge_color=edge_color, with_labels=labels)
         plt.gca().invert_yaxis()
-        plt.savefig(self.filename, format='png', dpi=300)
+        plt.savefig(self.filename, format='png')
         print("Figure saved in", self.filepath)
         if show_graph:
             plt.show()
@@ -710,3 +722,253 @@ class SugiyamaNX:
         print(Color.RED, "Cycles: ", cycle_amount, Color.END)
 
         return has_cycle
+
+    ### Brandes & Köpf ###
+
+    def brandes_koepf(self, blocklist: [str]):
+        self.logger.debug('brandes_koepf')
+
+        self.__initialice_align(blocklist)
+        self.__initialice_root(blocklist)
+        self.__initialice_sink()
+        self.__initialice_shift()
+        self.__initialice_x()
+
+        self.bk_horizontal_coordinate_assignment(blocklist)
+        print('done')
+
+    def bk_preprocessing(self, blocklist: []) -> None:
+        self.logger.debug('bk_preprocessing')
+
+        levels = self.get_level_dic()
+        level_keys = sorted(levels.keys())
+
+        x_sorted = self.__get_sorted_levels(levels)
+
+        # Ignore Root and Sink Level
+        for level in range(1, len(levels) - 1):
+            k_0 = 0
+            l = 1
+            for l_1 in range(0, len(x_sorted[level_keys[level + 1]])):
+                v_l1_i1 = x_sorted[level_keys[level + 1]][l_1]
+                block_id = self.get_block_id_from_block(self.get_block_to_node(v_l1_i1, blocklist))
+                incident_to_inner_segment = False
+                for node in self.n_minus[block_id]:
+                    if "dummy" in node:
+                        incident_to_inner_segment = True
+                if l_1 == len(x_sorted[level_keys[level]]) or incident_to_inner_segment:
+                    k_1 = len(x_sorted[level_keys[level]])
+                    if incident_to_inner_segment:
+                        # Can only be one as we are in a block
+                        upper_neighbor = self.n_minus[block_id][0]
+                        k_1 = x_sorted[level_keys[level]].index(upper_neighbor)
+                    while l <= l_1:
+                        predecessors = self.__get_upper(v_l1_i1, blocklist)
+                        for neighbor in predecessors:
+                            k = x_sorted[level_keys[level]].index(neighbor)
+                            if k < k_0 or k > k_1:
+                                self.mark_segments.append((neighbor, v_l1_i1))
+                        l += 1
+                    k_0 = k_1
+
+    def bk_vertical_alignment(self, blocklist: [str], vertical_direction: str, horizontal_direction: str) -> None:
+        # root self.upper von Knoten
+        # align ist der nächst folgende Knoten im Block, wobei nach self.lower wieder self.upper kommt
+        # Brandes & Köpf bezeichen upper (N-) und lower (N+) als die Knoten in der oben bwz. unten liegenden Ebene, gleich zu N+ und N-
+        self.logger.debug('bk_vertical_alignment')
+
+        levels = self.get_level_dic()
+        level_keys = sorted(levels.keys())
+
+        x_sorted = self.__get_sorted_levels(levels)
+
+        if vertical_direction == 'up':
+            level_range = range(0, len(levels)-1)
+        else:
+            level_range = range(len(levels)-1, 0, -1)
+
+        for i in level_range:
+            r = 0
+
+            if horizontal_direction == 'right':
+                node_range = range(len(x_sorted[level_keys[i]]) - 1)
+            else:
+                node_range = range(len(x_sorted[level_keys[i]]) - 1, 0, -1)
+
+            for k in node_range:
+                v_k_i = x_sorted[level_keys[i]][k]
+                # TODO Reversed successors?
+                if vertical_direction == 'up':
+                    pre_suc_cessors = self.__get_upper(v_k_i, blocklist)
+                else:
+                    pre_suc_cessors = self.__get_lower(v_k_i, blocklist)
+
+                d = len(pre_suc_cessors)
+                if d > 0:
+                    # TODO Probably -1, as to adjust to the list index
+                    for m in range(floor((d + 1) / 2), ceil((d + 1) / 2)):
+                        if self.align[v_k_i] == v_k_i:
+                            u_m = pre_suc_cessors[m]
+                            # Cannot go out of bounds, as this is only executed, when there are predecessors
+                            if vertical_direction == 'up':
+                                pos_u_m = x_sorted[level_keys[i - 1]].index(u_m)
+                            else:
+                                pos_u_m = x_sorted[level_keys[i + 1]].index(u_m)
+                            # TODO Reversed r > pos_u_m ?
+                            if vertical_direction == 'up':
+                                if (u_m, v_k_i) not in self.mark_segments and r < pos_u_m:
+                                    self.align[u_m] = v_k_i
+                                    self.root[v_k_i] = self.root[u_m]
+                                    self.align[v_k_i] = self.root[v_k_i]
+                                    r = pos_u_m
+                            else:
+                                if (v_k_i, u_m) not in self.mark_segments and r > pos_u_m:
+                                    self.align[u_m] = v_k_i
+                                    self.root[v_k_i] = self.root[u_m]
+                                    self.align[v_k_i] = self.root[v_k_i]
+                                    r = pos_u_m
+
+    def bk_horizontal_compaction(self, blocklist: [str], vertical_direction: str, horizontal_direction: str):
+        self.logger.debug('bk_horizontal_compaction')
+
+        # TODO reverse Direction
+
+        for node in self.graph.nodes:
+            if self.root[node] == node:
+                self.__place_block(node, blocklist)
+
+        for node in self.graph.nodes:
+            self.x[node] = self.x[self.root[node]]
+            if self.shift[self.sink[self.root[node]]] < inf:
+                self.x[node] += self.shift[self.sink[self.root[node]]]
+
+    def bk_horizontal_coordinate_assignment(self, blocklist: [str]):
+        self.logger.debug('bk_horizontal_coordinate_assignment')
+
+        self.bk_preprocessing(blocklist)
+        for vertical_direction in ['down', 'down']:
+            for horizontal_direction in ['left', 'right']:
+                self.bk_vertical_alignment(blocklist, vertical_direction=vertical_direction, horizontal_direction=horizontal_direction)
+                self.bk_horizontal_compaction(blocklist, vertical_direction=horizontal_direction, horizontal_direction=horizontal_direction)
+
+        # TODO align to assignment of smallest width
+        # TODO set coordinates to average median of aligned candidates
+
+    def __place_block(self, v: str, blocklist: [str]) -> None:
+        self.logger.debug('__place_block')
+
+        levels = self.get_level_dic()
+        x_sorted = self.__get_sorted_levels(levels)
+
+        v_level = None
+
+        for level, level_nodes in levels.items():
+            if v in level_nodes:
+                v_level = level
+
+        if v_level is None:
+            raise Exception('Level To Node V Not Found')
+
+        if self.x[v] is None:
+            self.x[v] = 0
+            w = v
+            while w != v:
+                w_level = None
+                for level, level_nodes in levels.items():
+                    if w in level_nodes:
+                        w_level = level
+
+                if w_level is None:
+                    raise Exception('Level To Node W Not Found')
+
+                w_pos = x_sorted[w_level].index(w)
+                if w_pos > 1:
+                    predecessor = self.n_minus[self.get_block_id_from_block(self.get_block_to_node(w, blocklist))]
+                    u = self.root[predecessor]
+                    self.__place_block(u, blocklist)
+                    if self.sink[v] == v:
+                         self.sink[v] = self.sink[u]
+                    if self.sink[v] != self.sink[u]:
+                        self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.delta)
+                    else:
+                        self.x[v] = max(self.x[v], self.x[u] + self.delta)
+                w = self.align[w]
+
+    def __get_sorted_levels(self, levels: dict) -> dict:
+        x_sorted = {}
+        for level_val, level_nodes in levels.items():
+            x_sorted[level_val] = self.__sort_nodes_by_x_value(level_nodes)
+
+        return x_sorted
+
+    def __initialice_x(self):
+        for node in self.graph.nodes:
+            self.x[node] = None
+
+    def __initialice_sink(self):
+        for node in self.graph.nodes:
+            self.sink[node] = node
+
+    def __initialice_shift(self):
+        for node in self.graph.nodes:
+            self.shift[node] = inf
+
+    def __initialice_root(self, blocklist: [str]) -> None:
+        for node in self.graph.nodes:
+            self.root[node] = self.upper(self.get_block_to_node(node, blocklist))
+
+    def __initialice_align(self, blocklist: [str]) -> None:
+        for node in self.graph.nodes:
+            self.align[node] = self.__get_next_align(node, blocklist)
+
+    def __get_next_align(self, node: str, blocklist: [str]) -> str:
+        block = self.get_block_to_node(node, blocklist)
+        if "dummy" in node:
+            node_number = int(node.split("_")[0])
+            node_name = "_".join(node.split("_")[1:])
+            successor = str(node_number + 1) + "_" + node_name
+            if successor not in block:
+                return self.upper(block)
+        else:
+            return node
+
+    def __get_upper(self, node: str, blocklist: []) -> [str]:
+        block_id = self.get_block_id_from_block(self.get_block_to_node(node, blocklist))
+        if "dummy" in node and "1_dummy" not in node:
+            node_number = int(node.split("_")[0])
+            node_name = "_".join(node.split("_")[1:])
+            predecessors = [str(node_number - 1) + "_" + node_name]
+        else:
+            predecessors = self.n_minus[block_id]
+
+        return predecessors
+
+    def __get_lower(self, node: str, blocklist: [str]) -> [str]:
+        block = self.get_block_to_node(node, blocklist)
+        block_id = self.get_block_id_from_block(block)
+        if "dummy" in node and "1_dummy" not in node:
+            node_number = int(node.split("_")[0])
+            node_name = "_".join(node.split("_")[1:])
+            successor = str(node_number + 1) + "_" + node_name
+            if successor not in block:
+                successors = self.n_plus[block_id]
+            else:
+                successors = [successor]
+        else:
+            successors = self.n_plus[block_id]
+
+        return successors
+
+    def __sort_nodes_by_x_value(self, nodes: []):
+        x_attributes = nx.get_node_attributes(self.graph, 'x')
+        sorted_by_x = []
+        for node in nodes:
+            position = 0
+            x_node = x_attributes[node]
+            for pos in range(len(sorted_by_x)):
+                if x_node < x_attributes[sorted_by_x[pos]]:
+                    position = pos
+                    break
+            sorted_by_x.insert(position, node)
+
+        return sorted_by_x
