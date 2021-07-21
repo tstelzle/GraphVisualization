@@ -27,13 +27,15 @@ def parse_parameters():
                         dest="sugiyama_x", default=False, help="Sugiyama Algorithm With NetworkX")
     parser.add_argument("-gm", "--graphml-method", action="store_true",
                         dest="graphml_method", default=False, help="Parse Graphml Files Only With Edge Key method-call")
+    parser.add_argument("-o", "--output-directory", action="store",
+                        dest="output_directory", default=False, help="Specifies The Output Directory")
 
     options = parser.parse_args()
 
     if not options.walker and not options.sugiyama and not options.sugiyama_x:
         print(Color.RED, "No Algorithm Specified - STOPPING", Color.END)
         sys.exit()
-    if not options.newick and not options.graphml:
+    if not options.newick and not options.graphml and not options.graphml_method:
         print(Color.RED, "No File Format Specified - STOPPING", Color.END)
         sys.exit()
 
@@ -48,12 +50,12 @@ def parse_parameters():
     if options.sugiyama_x:
         print(Color.GREEN, "Running Sugiyama Algorithm With NetworkX", Color.END)
         if options.graphml:
-            parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx('graphml')
+            parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx('graphml', options.output_directory)
         if options.newick:
-            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny')
-            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny-Binaer')
+            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny', options.output_directory)
+            parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx('Phylogeny-Binaer', options.output_directory)
         if options.graphml_method:
-            parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx('graphml')
+            parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx('graphml', options.output_directory)
 
     if options.sugiyama:
         print(Color.GREEN, "Running Sugiyama Algorithm", Color.END)
@@ -142,30 +144,30 @@ def parse_and_draw_all_graphml_files_with_sugiyama_algorithm(directory: str, tes
                 continue
 
 
-def parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx(directory: str):
+def parse_and_draw_all_graphml_files_with_sugiyama_algorithm_nx(directory: str, output_directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         file_path = os.path.join(graph_directory, directory, filename)
         current_graphml_graph = parse_graphml_file(file_path)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory="output_2")
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory=output_directory)
         sugiyama_algorithm_object.run_sugiyama()
 
 
-def parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx(directory: str):
+def parse_and_draw_all_graphml_methode_call_files_with_sugiyama_algorithm_nx(directory: str, output_directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         file_path = os.path.join(graph_directory, directory, filename)
         current_graphml_graph = GraphML(file_path).to_graph('method-call')
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory="output_2")
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory=output_directory)
         sugiyama_algorithm_object.run_sugiyama()
 
 
-def parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx(directory: str):
+def parse_and_draw_all_newick_files_with_sugiyama_algorithm_nx(directory: str, output_directory: str):
     for filename in os.listdir(os.path.join(graph_directory, directory)):
         print(Color.BOLD + os.path.join(graph_directory, directory, filename) + Color.END)
         file_path = os.path.join(graph_directory, directory, filename)
         current_graphml_graph = parse_newick_file_by_name(file_path)
-        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph)
+        sugiyama_algorithm_object = sugiyama_algorithm.sugiyama_nx.SugiyamaNX(file_path, current_graphml_graph, output_directory=output_directory)
         sugiyama_algorithm_object.run_sugiyama()
 
 
