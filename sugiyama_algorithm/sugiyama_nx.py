@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from module_color import *
-from math import ceil, floor, inf
 
 
 def initialize_output_directory(directory: str):
@@ -39,7 +38,7 @@ class SugiyamaNX:
         self.shift = {}
         self.x = {}
         self.mark_segments = []
-        self.delta = 5
+        self.delta = 1
         self.pi = {}
         self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         self.logger = logging.getLogger(self.filename).setLevel(logging.DEBUG)
@@ -166,7 +165,7 @@ class SugiyamaNX:
 
         return block_list
 
-    def global_sifting(self, block_list: [], sifting_rounds: int = 1):
+    def global_sifting(self, block_list: [], sifting_rounds: int = 2):
         self.logger.debug('global_sifting')
 
         block_counter = sifting_rounds * len(block_list)
@@ -728,14 +727,7 @@ class SugiyamaNX:
     def brandes_koepf(self, blocklist: [str]):
         self.logger.debug('brandes_koepf')
 
-        self.__initialice_align(blocklist)
-        self.__initialice_root(blocklist)
-        self.__initialice_sink()
-        self.__initialice_shift()
-        self.__initialice_x()
-
         self.bk_horizontal_coordinate_assignment(blocklist)
-        print('done')
 
     def bk_preprocessing(self, blocklist: []) -> None:
         self.logger.debug('bk_preprocessing')
@@ -777,15 +769,18 @@ class SugiyamaNX:
         # Brandes & Köpf bezeichen upper (N-) und lower (N+) als die Knoten in der oben bwz. unten liegenden Ebene, gleich zu N+ und N-
         self.logger.debug('bk_vertical_alignment')
 
+        self.__initialice_align()
+        self.__initialice_root()
+
         levels = self.get_level_dic()
         level_keys = sorted(levels.keys())
 
         x_sorted = self.__get_sorted_levels(levels)
 
         if vertical_direction == 'up':
-            level_range = range(0, len(levels)-1)
+            level_range = range(0, len(levels) - 1)
         else:
-            level_range = range(len(levels)-1, 0, -1)
+            level_range = range(len(levels) - 1, 0, -1)
 
         for i in level_range:
             r = 0
@@ -806,7 +801,7 @@ class SugiyamaNX:
                 d = len(pre_suc_cessors)
                 if d > 0:
                     # TODO Probably -1, as to adjust to the list index
-                    for m in range(floor((d + 1) / 2), ceil((d + 1) / 2)):
+                    for m in range(math.floor((d + 1) / 2)-1, math.ceil((d + 1) / 2)-1):
                         if self.align[v_k_i] == v_k_i:
                             u_m = pre_suc_cessors[m]
                             # Cannot go out of bounds, as this is only executed, when there are predecessors
@@ -831,7 +826,11 @@ class SugiyamaNX:
     def bk_horizontal_compaction(self, blocklist: [str], vertical_direction: str, horizontal_direction: str):
         self.logger.debug('bk_horizontal_compaction')
 
-        # TODO reverse Direction
+        # TODO reverse Direction -> not necessary?
+
+        self.__initialice_sink()
+        self.__initialice_shift()
+        self.__initialice_x()
 
         for node in self.graph.nodes:
             if self.root[node] == node:
@@ -839,20 +838,31 @@ class SugiyamaNX:
 
         for node in self.graph.nodes:
             self.x[node] = self.x[self.root[node]]
-            if self.shift[self.sink[self.root[node]]] < inf:
+            if self.shift[self.sink[self.root[node]]] < math.inf:
                 self.x[node] += self.shift[self.sink[self.root[node]]]
 
     def bk_horizontal_coordinate_assignment(self, blocklist: [str]):
         self.logger.debug('bk_horizontal_coordinate_assignment')
 
-        self.bk_preprocessing(blocklist)
-        for vertical_direction in ['down', 'down']:
-            for horizontal_direction in ['left', 'right']:
-                self.bk_vertical_alignment(blocklist, vertical_direction=vertical_direction, horizontal_direction=horizontal_direction)
-                self.bk_horizontal_compaction(blocklist, vertical_direction=horizontal_direction, horizontal_direction=horizontal_direction)
+        layouts = []
 
-        # TODO align to assignment of smallest width
-        # TODO set coordinates to average median of aligned candidates
+        self.bk_preprocessing(blocklist)
+        for vertical_direction in ['up', 'down']:
+            for horizontal_direction in ['left', 'right']:
+                self.bk_vertical_alignment(blocklist, vertical_direction=vertical_direction,
+                                           horizontal_direction=horizontal_direction)
+                self.bk_horizontal_compaction(blocklist, vertical_direction=horizontal_direction,
+                                              horizontal_direction=horizontal_direction)
+                layouts.append(copy.deepcopy(self.x))
+
+        print('test')
+
+        for node in self.graph.nodes:
+            pi = 0
+            for layout in layouts:
+                pi += layout[node]
+            pi = pi / len(layouts)
+            self.graph.add_node(node, x=pi)
 
     def __place_block(self, v: str, blocklist: [str]) -> None:
         self.logger.debug('__place_block')
@@ -882,12 +892,14 @@ class SugiyamaNX:
                     raise Exception('Level To Node W Not Found')
 
                 w_pos = x_sorted[w_level].index(w)
-                if w_pos > 1:
+                # TODO Weird Check, as the node always has a position -> Maybe 1
+                if w_pos > 0:
+                    # TODO Maybe Change to successor for different direction?
                     predecessor = self.n_minus[self.get_block_id_from_block(self.get_block_to_node(w, blocklist))]
                     u = self.root[predecessor]
                     self.__place_block(u, blocklist)
                     if self.sink[v] == v:
-                         self.sink[v] = self.sink[u]
+                        self.sink[v] = self.sink[u]
                     if self.sink[v] != self.sink[u]:
                         self.shift[self.sink[u]] = min(self.shift[self.sink[u]], self.x[v] - self.x[u] - self.delta)
                     else:
@@ -911,16 +923,17 @@ class SugiyamaNX:
 
     def __initialice_shift(self):
         for node in self.graph.nodes:
-            self.shift[node] = inf
+            self.shift[node] = math.inf
 
-    def __initialice_root(self, blocklist: [str]) -> None:
+    def __initialice_root(self) -> None:
         for node in self.graph.nodes:
-            self.root[node] = self.upper(self.get_block_to_node(node, blocklist))
+            self.root[node] = node
 
-    def __initialice_align(self, blocklist: [str]) -> None:
+    def __initialice_align(self) -> None:
         for node in self.graph.nodes:
-            self.align[node] = self.__get_next_align(node, blocklist)
+            self.align[node] = node
 
+    # TODO Not Used Anymore -> Align was wrongly initialized
     def __get_next_align(self, node: str, blocklist: [str]) -> str:
         block = self.get_block_to_node(node, blocklist)
         if "dummy" in node:
