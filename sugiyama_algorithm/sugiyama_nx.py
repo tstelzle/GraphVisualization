@@ -13,8 +13,11 @@ from module_color import *
 
 def initialize_output_directory(directory: str):
     if not os.path.exists(directory):
-        os.makedirs(directory)
-        os.chmod(directory, 0o777)
+        try:
+            os.makedirs(directory)
+            os.chmod(directory, 0o777)
+        except FileExistsError:
+            print('Directory Already Created.')
 
 
 class SugiyamaNX:
@@ -165,7 +168,7 @@ class SugiyamaNX:
 
         return block_list
 
-    def global_sifting(self, block_list: [], sifting_rounds: int = 2):
+    def global_sifting(self, block_list: [], sifting_rounds: int = 10):
         self.logger.debug('global_sifting')
 
         block_counter = sifting_rounds * len(block_list)
@@ -783,7 +786,10 @@ class SugiyamaNX:
             level_range = range(len(levels) - 1, 0, -1)
 
         for i in level_range:
-            r = 0
+            if vertical_direction == "up":
+                r = 0
+            else:
+                r = math.inf
 
             if horizontal_direction == 'right':
                 node_range = range(len(x_sorted[level_keys[i]]) - 1)
@@ -817,6 +823,7 @@ class SugiyamaNX:
                                     self.align[v_k_i] = self.root[v_k_i]
                                     r = pos_u_m
                             else:
+                                #TODO Maybe >= ???
                                 if (v_k_i, u_m) not in self.mark_segments and r > pos_u_m:
                                     self.align[u_m] = v_k_i
                                     self.root[v_k_i] = self.root[u_m]
@@ -855,8 +862,6 @@ class SugiyamaNX:
                                               horizontal_direction=horizontal_direction)
                 layouts.append(copy.deepcopy(self.x))
 
-        print('test')
-
         for node in self.graph.nodes:
             pi = 0
             for layout in layouts:
@@ -882,7 +887,8 @@ class SugiyamaNX:
         if self.x[v] is None:
             self.x[v] = 0
             w = v
-            while w != v:
+            w_equal_v = True
+            while w_equal_v:
                 w_level = None
                 for level, level_nodes in levels.items():
                     if w in level_nodes:
@@ -893,9 +899,10 @@ class SugiyamaNX:
 
                 w_pos = x_sorted[w_level].index(w)
                 # TODO Weird Check, as the node always has a position -> Maybe 1
-                if w_pos > 0:
+                if w_pos > 1:
                     # TODO Maybe Change to successor for different direction?
-                    predecessor = self.n_minus[self.get_block_id_from_block(self.get_block_to_node(w, blocklist))]
+                    # predecessor = self.n_minus[self.get_block_id_from_block(self.get_block_to_node(w, blocklist))]
+                    predecessor = x_sorted[v_level][x_sorted[v_level].index(v)-1]
                     u = self.root[predecessor]
                     self.__place_block(u, blocklist)
                     if self.sink[v] == v:
@@ -905,6 +912,8 @@ class SugiyamaNX:
                     else:
                         self.x[v] = max(self.x[v], self.x[u] + self.delta)
                 w = self.align[w]
+                if w == v:
+                    w_equal_v = False
 
     def __get_sorted_levels(self, levels: dict) -> dict:
         x_sorted = {}
